@@ -99,7 +99,7 @@ pub fn parsePartialNumber(s: []const u8, negative: bool, n: *usize) ?Number {
     var mantissa: u64 = 0;
     tryParseDigits(&stream, &mantissa);
     var int_end = stream.offset;
-    var n_digits = stream.offset;
+    var n_digits = @intCast(isize, stream.offset);
 
     // handle dot with the following digitis
     var exponent: i64 = 0;
@@ -111,7 +111,7 @@ pub fn parsePartialNumber(s: []const u8, negative: bool, n: *usize) ?Number {
 
         const n_after_dot = stream.offset - marker;
         exponent = -@intCast(i32, n_after_dot);
-        n_digits += n_after_dot;
+        n_digits += @intCast(isize, n_after_dot);
     }
 
     if (n_digits == 0) {
@@ -144,7 +144,7 @@ pub fn parsePartialNumber(s: []const u8, negative: bool, n: *usize) ?Number {
     stream.reset(); // re-parse from beginning
     while (stream.firstIs2('0', '.')) {
         // '0' = '.' + 2
-        n_digits -= stream.firstUnchecked() -% ('0' - 1);
+        n_digits -= @intCast(isize, stream.firstUnchecked() -% ('0' - 1));
         stream.advance(1);
     }
     if (n_digits > 0) {
