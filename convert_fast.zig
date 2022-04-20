@@ -12,40 +12,10 @@ const std = @import("std");
 const math = std.math;
 const Number = @import("common.zig").Number;
 const floatFromU64 = @import("common.zig").floatFromU64;
-
-fn FastPathLimits(comptime T: type) type {
-    return switch (T) {
-        f16 => struct {
-            // TODO: Compute based on derived properties instead of hardcoded structures.
-            pub const min_exponent = -4;
-            pub const max_exponent = 4;
-            pub const max_exponent_disguised = 7;
-            pub const max_mantissa = 2 << math.floatMantissaBits(T);
-        },
-        f32 => struct {
-            pub const min_exponent = -10;
-            pub const max_exponent = 10;
-            pub const max_exponent_disguised = 17;
-            pub const max_mantissa = 2 << math.floatMantissaBits(T);
-        },
-        f64 => struct {
-            pub const min_exponent = -22;
-            pub const max_exponent = 22;
-            pub const max_exponent_disguised = 37;
-            pub const max_mantissa = 2 << math.floatMantissaBits(T);
-        },
-        f128 => struct {
-            pub const min_exponent = -48;
-            pub const max_exponent = 48;
-            pub const max_exponent_disguised = 82;
-            pub const max_mantissa = 2 << math.floatMantissaBits(T);
-        },
-        else => @compileError("only f32 and f64 are supported"),
-    };
-}
+const FloatInfo = @import("FloatInfo.zig");
 
 fn isFastPath(comptime T: type, n: Number) bool {
-    const limits = FastPathLimits(T);
+    const limits = FloatInfo.from(T);
 
     return limits.min_exponent <= n.exponent and
         n.exponent <= limits.max_exponent_disguised and
@@ -107,7 +77,7 @@ pub fn convertFast(comptime T: type, n: Number) ?T {
     }
 
     // TODO: x86 (no SSE/SSE2) requires x87 FPU to be setup correctly with fldcw
-    const limits = FastPathLimits(T);
+    const limits = FloatInfo.from(T);
 
     var value: T = 0;
     if (n.exponent <= limits.max_exponent) {
