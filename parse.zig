@@ -1,7 +1,8 @@
 const std = @import("std");
+const common = @import("common.zig");
 const FloatStream = @import("FloatStream.zig");
-const isEightDigits = @import("common.zig").isEightDigits;
-const Number = @import("common.zig").Number;
+const isEightDigits = common.isEightDigits;
+const Number = common.Number;
 
 const min_19digit_int: u64 = 100_0000_0000_0000_0000;
 
@@ -13,7 +14,7 @@ const min_19digit_int: u64 = 100_0000_0000_0000_0000;
 ///
 /// This is based off the algorithm described in "Fast numeric string to
 /// int", available here: <https://johnnylee-sde.github.io/Fast-numeric-string-to-int/>.
-pub fn parse8Digits(v_: u64) u64 {
+fn parse8Digits(v_: u64) u64 {
     var v = v_;
     const mask = 0x0000_00ff_0000_00ff;
     const mul1 = 0x000f_4240_0000_0064;
@@ -26,7 +27,7 @@ pub fn parse8Digits(v_: u64) u64 {
 }
 
 /// Parse digits until a non-digit character is found.
-pub fn tryParseDigits(stream: *FloatStream, x: *u64) void {
+fn tryParseDigits(stream: *FloatStream, x: *u64) void {
     while (stream.scanDigit()) |digit| {
         x.* *%= 10;
         x.* +%= digit;
@@ -34,7 +35,7 @@ pub fn tryParseDigits(stream: *FloatStream, x: *u64) void {
 }
 
 /// Try to parse 8 digits at a time, using an optimized algorithm.
-pub fn tryParse8Digits(stream: *FloatStream, x: *u64) void {
+fn tryParse8Digits(stream: *FloatStream, x: *u64) void {
     if (stream.readU64()) |v| {
         if (isEightDigits(v)) {
             x.* = x.* *% 1_0000_0000 +% parse8Digits(v);
@@ -51,7 +52,7 @@ pub fn tryParse8Digits(stream: *FloatStream, x: *u64) void {
 }
 
 /// Parse up to 19 digits (the max that can be stored in a 64-bit integer).
-pub fn tryParse19Digits(stream: *FloatStream, x: *u64) void {
+fn tryParse19Digits(stream: *FloatStream, x: *u64) void {
     while (x.* < min_19digit_int) {
         if (stream.scanDigit()) |digit| {
             x.* *%= 10;
@@ -63,7 +64,7 @@ pub fn tryParse19Digits(stream: *FloatStream, x: *u64) void {
 }
 
 /// Parse the scientific notation component of a float.
-pub fn parseScientific(stream: *FloatStream) ?i64 {
+fn parseScientific(stream: *FloatStream) ?i64 {
     var exponent: i64 = 0;
     var negative = false;
 
@@ -91,7 +92,7 @@ pub fn parseScientific(stream: *FloatStream) ?i64 {
 ///
 /// This creates a representation of the float as the
 /// significant digits and the decimal exponent.
-pub fn parsePartialNumber(s: []const u8, negative: bool, n: *usize) ?Number {
+fn parsePartialNumber(s: []const u8, negative: bool, n: *usize) ?Number {
     std.debug.assert(s.len != 0);
     var stream = FloatStream.init(s);
 

@@ -1,9 +1,9 @@
 const std = @import("std");
 const math = std.math;
-const assert = std.debug.assert;
-const Number = @import("common.zig").Number;
-const BiasedFp = @import("common.zig").BiasedFp;
+const common = @import("common.zig");
 const FloatInfo = @import("FloatInfo.zig");
+const BiasedFp = common.BiasedFp;
+const Number = common.Number;
 
 /// Compute a float using an extended-precision representation.
 ///
@@ -149,9 +149,9 @@ const U128 = struct {
 // approximating the result, with the "high" part corresponding to the most significant
 // bits and the low part corresponding to the least significant bits.
 fn computeProductApprox(q: i64, w: u64, comptime precision: usize) U128 {
-    assert(q >= eisel_lemire_smallest_power_of_five);
-    assert(q <= eisel_lemire_largest_power_of_five);
-    assert(precision <= 64);
+    std.debug.assert(q >= eisel_lemire_smallest_power_of_five);
+    std.debug.assert(q <= eisel_lemire_largest_power_of_five);
+    std.debug.assert(precision <= 64);
 
     const mask = if (precision < 64)
         0xffff_ffff_ffff_ffff >> precision

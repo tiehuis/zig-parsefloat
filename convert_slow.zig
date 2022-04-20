@@ -1,6 +1,7 @@
 const std = @import("std");
 const math = std.math;
-const BiasedFp = @import("common.zig").BiasedFp;
+const common = @import("common.zig");
+const BiasedFp = common.BiasedFp;
 const Decimal = @import("Decimal.zig");
 
 const max_shift = 60;

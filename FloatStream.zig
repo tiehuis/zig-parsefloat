@@ -1,4 +1,4 @@
-//! A wrapper over a byte-slice, providing a Reader-like interface.
+//! A wrapper over a byte-slice, providing useful methods for parsing string floating point values.
 
 const std = @import("std");
 const FloatStream = @This();

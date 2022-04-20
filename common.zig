@@ -9,29 +9,16 @@ pub const BiasedFp = struct {
     /// The biased, binary exponent.
     e: i32,
 
-    pub fn dump(self: BiasedFp) void {
-        std.debug.print(
-            \\| BiasedFp
-            \\| f   {}
-            \\| e   {}
-            \\
-        , .{ self.f, self.e });
+    pub fn zero() BiasedFp {
+        return .{ .f = 0, .e = 0 };
     }
 
     pub fn zeroPow2(e: i32) BiasedFp {
         return .{ .f = 0, .e = e };
     }
 
-    pub fn zero() BiasedFp {
-        return .{ .f = 0, .e = 0 };
-    }
-
     pub fn inf(comptime T: type) BiasedFp {
         return .{ .f = 0, .e = (1 << std.math.floatExponentBits(T)) - 1 };
-    }
-
-    pub fn invalid() BiasedFp {
-        return .{ .f = 0, .e = -1 };
     }
 
     pub fn eql(self: BiasedFp, other: BiasedFp) bool {
@@ -41,7 +28,7 @@ pub const BiasedFp = struct {
     pub fn toFloat(self: BiasedFp, comptime T: type, negative: bool) T {
         var word = self.f;
         word |= @intCast(u64, self.e) << std.math.floatMantissaBits(T);
-        var f = floatFromU64(T, word); // TODO: Support f128 with u128 mantissa
+        var f = floatFromU64(T, word);
         if (negative) f = -f;
         return f;
     }
@@ -52,7 +39,7 @@ pub fn floatFromU64(comptime T: type, v: u64) T {
         f16 => @bitCast(f16, @truncate(u16, v)),
         f32 => @bitCast(f32, @truncate(u32, v)),
         f64 => @bitCast(f64, v),
-        else => @compileError("toFloat not implemented for " ++ @typeName(T)),
+        else => unreachable,
     };
 }
 

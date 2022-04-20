@@ -300,21 +300,6 @@ pub fn parse(s: []const u8) Decimal {
     return d;
 }
 
-pub fn dump(d: Decimal) void {
-    std.debug.print(
-        \\
-        \\| Decimal
-        \\| num_digits      {}
-        \\| decimal_point   {}
-        \\| truncated       {}
-        \\| digits          '
-    , .{ d.num_digits, d.decimal_point, d.truncated });
-    for (d.digits[0..d.num_digits]) |digit| {
-        std.debug.print("{c}", .{digit + '0'});
-    }
-    std.debug.print("'\n\n", .{});
-}
-
 pub fn numberOfDigitsLeftShift(self: *Decimal, shift_: usize) usize {
     var shift = shift_;
 

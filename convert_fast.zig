@@ -10,9 +10,10 @@
 
 const std = @import("std");
 const math = std.math;
-const Number = @import("common.zig").Number;
-const floatFromU64 = @import("common.zig").floatFromU64;
+const common = @import("common.zig");
 const FloatInfo = @import("FloatInfo.zig");
+const Number = common.Number;
+const floatFromU64 = common.floatFromU64;
 
 fn isFastPath(comptime T: type, n: Number) bool {
     const info = FloatInfo.from(T);
@@ -29,7 +30,6 @@ fn isFastPath(comptime T: type, n: Number) bool {
 // we only support f64 maximum at this stage
 fn fastPow10(comptime T: type, i: usize) T {
     return switch (T) {
-        // TODO: Compute based on derived properties instead of hardcoded structures.
         f16 => ([8]f16{
             1e0, 1e1, 1e2, 1e3, 1e4, 0, 0, 0,
         })[i & 7],
@@ -57,13 +57,10 @@ fn fastPow10(comptime T: type, i: usize) T {
             0,    0,    0,    0,    0,    0,    0,    0,
         })[i & 63],
 
-        else => @compileError("only f16, f32, f64 and f128 supported"),
+        else => unreachable,
     };
 }
 
-// TODO: f128 requires widenining mantissa values to u128 everywhere which needs some further thought.
-// Perhaps specialize this and make two Number variants, one with a u128 and one with a u64 as
-// now. We do not want the f128 parsing to slow f64 through unintended slow compiler-rt usages.
 const int_pow10 = [_]u64{
     1,             10,             100,             1000,
     10000,         100000,         1000000,         10000000,

@@ -8,7 +8,7 @@ test "fmt.parseFloat" {
     const approxEqAbs = std.math.approxEqAbs;
     const epsilon = 1e-7;
 
-    // TODO: f16 and f128
+    // TODO: f128
     inline for ([_]type{ f16, f32, f64 }) |T| {
         const Z = std.meta.Int(.unsigned, @typeInfo(T).Float.bits);
 

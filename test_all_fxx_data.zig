@@ -1,5 +1,6 @@
 const std = @import("std");
 const parseFloat = @import("parse_float.zig").parseFloat;
+//const parseFloat = std.fmt.parseFloat;
 
 // f16 f32 f64 string_repr
 const TestCase = struct {

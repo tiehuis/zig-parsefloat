@@ -50,10 +50,10 @@ max_exponent_round_to_even: comptime_int,
 // Largest exponent value `(1 << EXP_BITS) - 1`.
 infinite_power: comptime_int,
 
+// TODO: Compute based on derived properties instead of hardcoded structures.
 pub fn from(comptime T: type) Self {
     return switch (T) {
         f16 => .{
-            // TODO: Compute based on derived properties instead of hardcoded structures.
             .min_exponent_fast_path = -4,
             .max_exponent_fast_path = 4,
             .max_exponent_fast_path_disguised = 7,
@@ -101,13 +101,6 @@ pub fn from(comptime T: type) Self {
             .max_exponent_round_to_even = 23,
             .infinite_power = 0x7ff,
         },
-        f128 => .{
-            .min_exponent_fast_path = -48,
-            .max_exponent_fast_path = 48,
-            .max_exponent_fast_path_disguised = 82,
-            .max_mantissa_fast_path = 2 << std.math.floatMantissaBits(T),
-            // TODO: other information for required for eisel-lemire
-        },
-        else => @compileError("unsupported float type for eisel-lemire algorithm"),
+        else => unreachable,
     };
 }

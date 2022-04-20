@@ -1,6 +1,7 @@
 const std = @import("std");
-const parseNumber = @import("parse.zig").parseNumber;
-const parseInfOrNan = @import("parse.zig").parseInfOrNan;
+const parse = @import("parse.zig");
+const parseNumber = parse.parseNumber;
+const parseInfOrNan = parse.parseInfOrNan;
 const convertFast = @import("convert_fast.zig").convertFast;
 const convertEiselLemire = @import("convert_eisel_lemire.zig").convertEiselLemire;
 const convertSlow = @import("convert_slow.zig").convertSlow;
@@ -28,8 +29,8 @@ pub fn parseFloat(comptime T: type, s: []const u8) ParseFloatError!T {
         return error.Invalid;
     }
 
-    const n = parseNumber(s[i..], negative) orelse {
-        return parseInfOrNan(T, s[i..], negative) orelse error.Invalid;
+    const n = parse.parseNumber(s[i..], negative) orelse {
+        return parse.parseInfOrNan(T, s[i..], negative) orelse error.Invalid;
     };
 
     if (convertFast(T, n)) |f| {
