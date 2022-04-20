@@ -14,13 +14,6 @@ pub fn reset(self: *FloatStream) void {
     self.offset = 0;
 }
 
-pub fn dupe(self: FloatStream) FloatStream {
-    return .{
-        .slice = self.slice[self.offset..],
-        .offset = 0,
-    };
-}
-
 pub fn len(self: FloatStream) usize {
     if (self.offset > self.slice.len) {
         return 0;

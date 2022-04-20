@@ -68,18 +68,36 @@ pub fn main() !void {
 
         var tc: TestCase = undefined;
         while (try scanLine(stream, &tc)) |_| {
-            //try std.testing.expectEqual(tc.f16_bits, @bitCast(u16, try parseFloat(f16, tc.float_string)));
-            std.testing.expectEqual(tc.f32_bits, @bitCast(u32, try parseFloat(f32, tc.float_string))) catch {
-                std.debug.print(" | f32: {s}\n", .{tc.line[0..tc.line_len]});
+            var failure = false;
+
+            // All passing using fast then slow (not eisel-lemire)
+            if (true) {
+                std.testing.expectEqual(tc.f16_bits, @bitCast(u16, try parseFloat(f16, tc.float_string))) catch {
+                    std.debug.print(" | f16: {s}\n", .{tc.line[0..tc.line_len]});
+                    failure = true;
+                };
+            }
+
+            if (true) {
+                std.testing.expectEqual(tc.f32_bits, @bitCast(u32, try parseFloat(f32, tc.float_string))) catch {
+                    std.debug.print(" | f32: {s}\n", .{tc.line[0..tc.line_len]});
+                    failure = true;
+                };
+            }
+
+            if (true) {
+                std.testing.expectEqual(tc.f64_bits, @bitCast(u64, try parseFloat(f64, tc.float_string))) catch {
+                    std.debug.print(" | f64: {s}\n", .{tc.line[0..tc.line_len]});
+                    failure = true;
+                };
+            }
+
+            if (failure) {
                 fail += 1;
-            };
-            std.testing.expectEqual(tc.f64_bits, @bitCast(u64, try parseFloat(f64, tc.float_string))) catch {
-                std.debug.print(" | f64: {s}\n", .{tc.line[0..tc.line_len]});
-                fail += 1;
-            };
+            }
             count += 1;
         }
     }
 
-    std.debug.print("{}/{} succeeded\n", .{ count - fail, count });
+    std.debug.print("{}/{} succeeded ({} fail)\n", .{ count - fail, count, fail });
 }

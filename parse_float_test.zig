@@ -9,7 +9,7 @@ test "fmt.parseFloat" {
     const epsilon = 1e-7;
 
     // TODO: f16 and f128
-    inline for ([_]type{ f32, f64 }) |T| {
+    inline for ([_]type{ f16, f32, f64 }) |T| {
         const Z = std.meta.Int(.unsigned, @typeInfo(T).Float.bits);
 
         try testing.expectError(error.Empty, parseFloat(T, ""));
@@ -36,6 +36,7 @@ test "fmt.parseFloat" {
         try expectEqual(try parseFloat(T, "1e-700"), 0);
         try expectEqual(try parseFloat(T, "1e+700"), std.math.inf(T));
 
+        // TODO: f128 nan differs during cast
         try expectEqual(@bitCast(Z, try parseFloat(T, "nAn")), @bitCast(Z, std.math.nan(T)));
         try expectEqual(try parseFloat(T, "inF"), std.math.inf(T));
         try expectEqual(try parseFloat(T, "-INF"), -std.math.inf(T));

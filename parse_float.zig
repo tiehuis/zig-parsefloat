@@ -32,24 +32,11 @@ pub fn parseFloat(comptime T: type, s: []const u8) ParseFloatError!T {
         return parseInfOrNan(T, s[i..], negative) orelse error.Invalid;
     };
 
-    //std.debug.print(
-    //    \\
-    //    \\| s               '{s}'
-    //    \\| len             {}
-    //    \\| n.exponent      {}
-    //    \\| n.mantissa      {}
-    //    \\| n.negative      {}
-    //    \\| n.many_digits   {}
-    //    \\
-    //, .{ s, s.len, n.exponent, n.mantissa, n.negative, n.many_digits });
-
-    if (optimize) {
-        if (convertFast(T, n)) |f| {
-            return f;
-        }
+    if (convertFast(T, n)) |f| {
+        return f;
     }
 
-    if (optimize) {
+    if ((T == f32 or T == f64) and optimize) {
         // If significant digits were truncated, then we can have rounding error
         // only if `mantissa + 1` produces a different result. We also avoid
         // redundantly using the Eisel-Lemire algorithm if it was unable to

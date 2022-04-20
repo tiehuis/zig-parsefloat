@@ -110,7 +110,7 @@ pub fn parsePartialNumber(s: []const u8, negative: bool, n: *usize) ?Number {
         tryParseDigits(&stream, &mantissa);
 
         const n_after_dot = stream.offset - marker;
-        exponent = -@intCast(i32, n_after_dot);
+        exponent = -@intCast(i64, n_after_dot);
         n_digits += @intCast(isize, n_after_dot);
     }
 
@@ -144,19 +144,20 @@ pub fn parsePartialNumber(s: []const u8, negative: bool, n: *usize) ?Number {
     stream.reset(); // re-parse from beginning
     while (stream.firstIs2('0', '.')) {
         // '0' = '.' + 2
-        n_digits -= @intCast(isize, stream.firstUnchecked() -% ('0' - 1));
+        n_digits -= @intCast(isize, stream.firstUnchecked() -| ('0' - 1));
         stream.advance(1);
     }
     if (n_digits > 0) {
         // at this point we have more than 19 significant digits, let's try again
         many_digits = true;
         mantissa = 0;
+        stream.reset();
         tryParse19Digits(&stream, &mantissa);
 
         exponent = blk: {
             if (mantissa >= min_19digit_int) {
                 // big int
-                break :blk @intCast(i64, stream.offset) - @intCast(i64, int_end);
+                break :blk @intCast(i64, int_end) - @intCast(i64, stream.offset);
             } else {
                 // the next byte must be present and be '.'
                 // We know this is true because we had more than 19

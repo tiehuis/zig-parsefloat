@@ -15,6 +15,21 @@ const EiselLemireData = struct {
 
     pub fn from(comptime T: type) EiselLemireData {
         return switch (T) {
+            f16 => .{
+                .smallest_power_of_ten = -8, // 5.96046447753906250000000000000000000e-8F16;
+                .largest_power_of_ten = 4,
+                .mantissa_explicit_bits = math.floatMantissaBits(T),
+                .minimum_exponent = -14,
+                // w >= (2m+1) * 5^-q and w < 2^64
+                // => 2m+1 > 2^9
+                // => 2^9*5^-q < 2^64
+                // => 5^-q < 2^55
+                // => q >= -23
+                .min_exponent_round_to_even = -23,
+                // 5^q <= 2m+1 <= 2^8 or q <= 3
+                .max_exponent_round_to_even = 3,
+                .infinite_power = 0x1f,
+            },
             f32 => .{
                 .smallest_power_of_ten = -65,
                 .largest_power_of_ten = 38,
@@ -57,6 +72,7 @@ const EiselLemireData = struct {
 /// section 6, "Exact Numbers And Ties", available online:
 /// <https://arxiv.org/abs/2101.11408.pdf>.
 pub fn convertEiselLemire(comptime T: type, q: i64, w_: u64) ?BiasedFp {
+    std.debug.assert(T == f32 or T == f64);
     var w = w_;
     const float_info = EiselLemireData.from(T);
 
@@ -90,7 +106,7 @@ pub fn convertEiselLemire(comptime T: type, q: i64, w_: u64) ?BiasedFp {
         // <https://arxiv.org/pdf/2101.11408.pdf#section.8>.
         const inside_safe_exponent = q >= -27 and q <= 55;
         if (!inside_safe_exponent) {
-            return BiasedFp.invalid();
+            return null;
         }
     }
 
@@ -124,7 +140,8 @@ pub fn convertEiselLemire(comptime T: type, q: i64, w_: u64) ?BiasedFp {
     if (r.lo <= 1 and
         q >= float_info.min_exponent_round_to_even and
         q <= float_info.max_exponent_round_to_even and
-        mantissa & 3 == 1 and math.shl(u64, mantissa, (upper_bit + 64 - @intCast(i32, float_info.mantissa_explicit_bits) - 3)) == r.hi)
+        mantissa & 3 == 1 and
+        math.shl(u64, mantissa, (upper_bit + 64 - @intCast(i32, float_info.mantissa_explicit_bits) - 3)) == r.hi)
     {
         // Zero the lowest bit, so we don't round up.
         mantissa &= ~@as(u64, 1);

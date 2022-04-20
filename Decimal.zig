@@ -226,27 +226,31 @@ pub fn parse(s: []const u8) Decimal {
 
     if (stream.firstIs('.')) {
         stream.advance(1);
-        const first = stream.dupe();
+        const marker = stream.offset;
 
         // Skip leading zeroes
         if (d.num_digits == 0) {
             stream.skipChars('0');
         }
 
-        while (stream.hasLen(8) and d.num_digits + 8 < max_digits) {
-            const v = stream.readU64Unchecked();
-            if (!isEightDigits(v)) {
-                break;
+        // TODO: This is causing test failures. We are writing the start of the stream out again
+        // to the incorrect spot. Recheck logic.
+        if (false) {
+            while (stream.hasLen(8) and d.num_digits + 8 < max_digits) {
+                const v = stream.readU64Unchecked();
+                if (!isEightDigits(v)) {
+                    break;
+                }
+                std.mem.writeIntSliceLittle(u64, d.digits[d.num_digits..], v - 0x3030_3030_3030_3030);
+                d.num_digits += 8;
+                stream.advance(8);
             }
-            std.mem.writeIntSliceLittle(u64, d.digits[d.num_digits..], v - 0x3030_3030_3030_3030);
-            d.num_digits += 8;
-            stream.advance(8);
         }
 
         while (stream.scanDigit()) |digit| {
             d.tryAddDigit(digit);
         }
-        d.decimal_point = @intCast(i32, stream.len()) - @intCast(i32, first.len());
+        d.decimal_point = @intCast(i32, marker) - @intCast(i32, stream.offset);
     }
     if (d.num_digits != 0) {
         // Ignore trailing zeros if any

@@ -15,6 +15,13 @@ const floatFromU64 = @import("common.zig").floatFromU64;
 
 fn FastPathLimits(comptime T: type) type {
     return switch (T) {
+        f16 => struct {
+            // TODO: Compute based on derived properties instead of hardcoded structures.
+            pub const min_exponent = -4;
+            pub const max_exponent = 4;
+            pub const max_exponent_disguised = 7;
+            pub const max_mantissa = 2 << math.floatMantissaBits(T);
+        },
         f32 => struct {
             pub const min_exponent = -10;
             pub const max_exponent = 10;
@@ -25,6 +32,12 @@ fn FastPathLimits(comptime T: type) type {
             pub const min_exponent = -22;
             pub const max_exponent = 22;
             pub const max_exponent_disguised = 37;
+            pub const max_mantissa = 2 << math.floatMantissaBits(T);
+        },
+        f128 => struct {
+            pub const min_exponent = -48;
+            pub const max_exponent = 48;
+            pub const max_exponent_disguised = 82;
             pub const max_mantissa = 2 << math.floatMantissaBits(T);
         },
         else => @compileError("only f32 and f64 are supported"),
@@ -46,24 +59,41 @@ fn isFastPath(comptime T: type, n: Number) bool {
 // we only support f64 maximum at this stage
 fn fastPow10(comptime T: type, i: usize) T {
     return switch (T) {
-        f32 => {
-            return ([16]f32{
-                1e0, 1e1, 1e2,  1e3, 1e4, 1e5, 1e6, 1e7,
-                1e8, 1e9, 1e10, 0,   0,   0,   0,   0,
-            })[i & 15];
-        },
-        f64 => {
-            return ([32]f64{
-                1e0,  1e1,  1e2,  1e3,  1e4,  1e5,  1e6,  1e7,
-                1e8,  1e9,  1e10, 1e11, 1e12, 1e13, 1e14, 1e15,
-                1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22, 0,
-                0,    0,    0,    0,    0,    0,    0,    0,
-            })[i & 31];
-        },
-        else => @compileError("only f32 and f64 are supported"),
+        // TODO: Compute based on derived properties instead of hardcoded structures.
+        f16 => ([8]f16{
+            1e0, 1e1, 1e2, 1e3, 1e4, 0, 0, 0,
+        })[i & 7],
+
+        f32 => ([16]f32{
+            1e0, 1e1, 1e2,  1e3, 1e4, 1e5, 1e6, 1e7,
+            1e8, 1e9, 1e10, 0,   0,   0,   0,   0,
+        })[i & 15],
+
+        f64 => ([32]f64{
+            1e0,  1e1,  1e2,  1e3,  1e4,  1e5,  1e6,  1e7,
+            1e8,  1e9,  1e10, 1e11, 1e12, 1e13, 1e14, 1e15,
+            1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22, 0,
+            0,    0,    0,    0,    0,    0,    0,    0,
+        })[i & 31],
+
+        f128 => ([64]f128{
+            1e0,  1e1,  1e2,  1e3,  1e4,  1e5,  1e6,  1e7,
+            1e8,  1e9,  1e10, 1e11, 1e12, 1e13, 1e14, 1e15,
+            1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22, 1e23,
+            1e24, 1e25, 1e26, 1e27, 1e28, 1e29, 1e30, 1e31,
+            1e32, 1e33, 1e34, 1e35, 1e36, 1e37, 1e38, 1e39,
+            1e40, 1e41, 1e42, 1e43, 1e44, 1e45, 1e46, 1e47,
+            1e48, 0,    0,    0,    0,    0,    0,    0,
+            0,    0,    0,    0,    0,    0,    0,    0,
+        })[i & 63],
+
+        else => @compileError("only f16, f32, f64 and f128 supported"),
     };
 }
 
+// TODO: f128 requires widenining mantissa values to u128 everywhere which needs some further thought.
+// Perhaps specialize this and make two Number variants, one with a u128 and one with a u64 as
+// now. We do not want the f128 parsing to slow f64 through unintended slow compiler-rt usages.
 const int_pow10 = [_]u64{
     1,             10,             100,             1000,
     10000,         100000,         1000000,         10000000,

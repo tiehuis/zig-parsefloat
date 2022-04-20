@@ -41,7 +41,7 @@ pub const BiasedFp = struct {
     pub fn toFloat(self: BiasedFp, comptime T: type, negative: bool) T {
         var word = self.f;
         word |= @intCast(u64, self.e) << std.math.floatMantissaBits(T);
-        var f = floatFromU64(T, word);
+        var f = floatFromU64(T, word); // TODO: Support f128 with u128 mantissa
         if (negative) f = -f;
         return f;
     }
@@ -49,6 +49,7 @@ pub const BiasedFp = struct {
 
 pub fn floatFromU64(comptime T: type, v: u64) T {
     return switch (T) {
+        f16 => @bitCast(f16, @truncate(u16, v)),
         f32 => @bitCast(f32, @truncate(u32, v)),
         f64 => @bitCast(f64, v),
         else => @compileError("toFloat not implemented for " ++ @typeName(T)),
