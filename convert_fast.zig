@@ -15,11 +15,11 @@ const floatFromU64 = @import("common.zig").floatFromU64;
 const FloatInfo = @import("FloatInfo.zig");
 
 fn isFastPath(comptime T: type, n: Number) bool {
-    const limits = FloatInfo.from(T);
+    const info = FloatInfo.from(T);
 
-    return limits.min_exponent <= n.exponent and
-        n.exponent <= limits.max_exponent_disguised and
-        n.mantissa <= limits.max_mantissa and
+    return info.min_exponent_fast_path <= n.exponent and
+        n.exponent <= info.max_exponent_fast_path_disguised and
+        n.mantissa <= info.max_mantissa_fast_path and
         !n.many_digits;
 }
 
@@ -77,10 +77,10 @@ pub fn convertFast(comptime T: type, n: Number) ?T {
     }
 
     // TODO: x86 (no SSE/SSE2) requires x87 FPU to be setup correctly with fldcw
-    const limits = FloatInfo.from(T);
+    const info = FloatInfo.from(T);
 
     var value: T = 0;
-    if (n.exponent <= limits.max_exponent) {
+    if (n.exponent <= info.max_exponent_fast_path) {
         // normal fast path
         value = @intToFloat(T, n.mantissa);
         value = if (n.exponent < 0)
@@ -89,12 +89,12 @@ pub fn convertFast(comptime T: type, n: Number) ?T {
             value * fastPow10(T, @intCast(usize, n.exponent));
     } else {
         // disguised fast path
-        const shift = n.exponent - limits.max_exponent;
+        const shift = n.exponent - info.max_exponent_fast_path;
         const mantissa = math.mul(u64, n.mantissa, int_pow10[@intCast(usize, shift)]) catch return null;
-        if (mantissa > limits.max_mantissa) {
+        if (mantissa > info.max_mantissa_fast_path) {
             return null;
         }
-        value = @intToFloat(T, mantissa) * fastPow10(T, limits.max_exponent);
+        value = @intToFloat(T, mantissa) * fastPow10(T, info.max_exponent_fast_path);
     }
 
     if (n.negative) {

@@ -72,24 +72,24 @@ pub fn main() !void {
 
             // All passing using fast then slow (not eisel-lemire)
             if (true) {
-                std.testing.expectEqual(tc.f16_bits, @bitCast(u16, try parseFloat(f16, tc.float_string))) catch {
-                    std.debug.print(" | f16: {s}\n", .{tc.line[0..tc.line_len]});
+                if (tc.f16_bits != @bitCast(u16, try parseFloat(f16, tc.float_string))) {
+                    //std.debug.print(" | f16: {s}\n", .{tc.line[0..tc.line_len]});
                     failure = true;
-                };
+                }
             }
 
             if (true) {
-                std.testing.expectEqual(tc.f32_bits, @bitCast(u32, try parseFloat(f32, tc.float_string))) catch {
-                    std.debug.print(" | f32: {s}\n", .{tc.line[0..tc.line_len]});
+                if (tc.f32_bits != @bitCast(u32, try parseFloat(f32, tc.float_string))) {
+                    //std.debug.print(" | f32: {s}\n", .{tc.line[0..tc.line_len]});
                     failure = true;
-                };
+                }
             }
 
             if (true) {
-                std.testing.expectEqual(tc.f64_bits, @bitCast(u64, try parseFloat(f64, tc.float_string))) catch {
-                    std.debug.print(" | f64: {s}\n", .{tc.line[0..tc.line_len]});
+                if (tc.f64_bits != @bitCast(u64, try parseFloat(f64, tc.float_string))) {
+                    //std.debug.print(" | f64: {s}\n", .{tc.line[0..tc.line_len]});
                     failure = true;
-                };
+                }
             }
 
             if (failure) {
