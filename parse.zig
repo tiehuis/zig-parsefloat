@@ -102,7 +102,7 @@ fn parsePartialNumber(s: []const u8, negative: bool, n: *usize) ?Number {
     var int_end = stream.offset;
     var n_digits = @intCast(isize, stream.offset);
 
-    // handle dot with the following digitis
+    // handle dot with the following digits
     var exponent: i64 = 0;
     if (stream.firstIs('.')) {
         stream.advance(1);

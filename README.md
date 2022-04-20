@@ -32,4 +32,19 @@ This function will:
  4. If not succesful, convert using a big decimal type. This will always be
     work.
 
+# TODO
 
+Before merging, complete the following:
+
+ [ ] - Allow underscores according to zig spec in floating point literals
+ [ ] - Fix eisel-lemire algorithm for f16
+ [ ] - Consider f128 support mechanism. Likely push back to a later commit.
+
+# f128 support
+
+Initial support will likely be via duplicating Decimal, increasing the stack
+space and internal representation to use a u128. Then, using the fast-path and
+slow-path only (no eisel-lemire). Note that the standard parsing routine would
+need modification to support u128 internally. I do not want to do this
+generically for all cases since I expect it to be much slower in the non-f128
+case.
