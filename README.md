@@ -36,9 +36,9 @@ This function will:
 
 Before merging, complete the following:
 
- [ ] - Allow underscores according to zig spec in floating point literals
- [ ] - Fix eisel-lemire algorithm for f16
- [ ] - Consider f128 support mechanism. Likely push back to a later commit.
+ - [ ] Allow underscores according to zig spec in floating point literals
+ - [ ] Fix eisel-lemire algorithm for f16
+ - [ ] Consider f128 support mechanism. Likely push back to a later commit.
 
 # f128 support
 
