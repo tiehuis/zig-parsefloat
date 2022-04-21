@@ -5,8 +5,12 @@ test "fmt.parseFloat" {
     const testing = std.testing;
     const expect = testing.expect;
     const expectEqual = testing.expectEqual;
+    const expectError = testing.expectError;
     const approxEqAbs = std.math.approxEqAbs;
     const epsilon = 1e-7;
+
+    // TODO
+    //try expectEqual(@as(f16, 0), try parseFloat(f16, "2.98023223876953125E-8"));
 
     // TODO: f128
     inline for ([_]type{ f16, f32, f64 }) |T| {
@@ -43,8 +47,13 @@ test "fmt.parseFloat" {
 
         try expectEqual(try parseFloat(T, "0.4e0066999999999999999999999999999999999999999999999999999"), std.math.inf(T));
 
-        // TODO: support underscores
-        //try expect(approxEqAbs(T, try parseFloat(T, "0_1_2_3_4_5_6.7_8_9_0_0_0e0_0_1_0"), @as(T, 123456.789000e10), epsilon));
+        try expect(approxEqAbs(T, try parseFloat(T, "0_1_2_3_4_5_6.7_8_9_0_0_0e0_0_1_0"), @as(T, 123456.789000e10), epsilon));
+        // underscore rule is simple and reduces to "can only occur between two digits" and multiple are not supported.
+        try expectError(error.Invalid, parseFloat(T, "0123456.789000e_0010")); // cannot occur immediately after exponent
+        try expectError(error.Invalid, parseFloat(T, "_0123456.789000e0010")); // cannot occur before any digits
+        try expectError(error.Invalid, parseFloat(T, "0__123456.789000e_0010")); // cannot occur twice in a row
+        try expectError(error.Invalid, parseFloat(T, "0123456_.789000e0010")); // cannot occur before decimal point
+        try expectError(error.Invalid, parseFloat(T, "0123456.789000e0010_")); // cannot occur at end of number
 
         if (T != f16) {
             try expect(approxEqAbs(T, try parseFloat(T, "1e-2"), 0.01, epsilon));

@@ -99,18 +99,18 @@ fn parsePartialNumber(s: []const u8, negative: bool, n: *usize) ?Number {
     // parse initial digits before dot
     var mantissa: u64 = 0;
     tryParseDigits(&stream, &mantissa);
-    var int_end = stream.offset;
-    var n_digits = @intCast(isize, stream.offset);
+    var int_end = stream.offsetTrue();
+    var n_digits = @intCast(isize, stream.offsetTrue());
 
     // handle dot with the following digits
     var exponent: i64 = 0;
     if (stream.firstIs('.')) {
         stream.advance(1);
-        const marker = stream.offset;
+        const marker = stream.offsetTrue();
         tryParse8Digits(&stream, &mantissa);
         tryParseDigits(&stream, &mantissa);
 
-        const n_after_dot = stream.offset - marker;
+        const n_after_dot = stream.offsetTrue() - marker;
         exponent = -@intCast(i64, n_after_dot);
         n_digits += @intCast(isize, n_after_dot);
     }
@@ -127,8 +127,12 @@ fn parsePartialNumber(s: []const u8, negative: bool, n: *usize) ?Number {
         exponent += exp_number;
     }
 
-    const len = stream.offset;
+    const len = stream.offset; // length must be complete parsed length
     n.* = len;
+
+    if (stream.underscore_count > 0 and !validUnderscores(s)) {
+        return null;
+    }
 
     // common case with not many digits
     if (n_digits <= 19) {
@@ -143,9 +147,14 @@ fn parsePartialNumber(s: []const u8, negative: bool, n: *usize) ?Number {
     n_digits -= 19;
     var many_digits = false;
     stream.reset(); // re-parse from beginning
-    while (stream.firstIs2('0', '.')) {
+    while (stream.firstIs3('0', '.', '_')) {
         // '0' = '.' + 2
-        n_digits -= @intCast(isize, stream.firstUnchecked() -| ('0' - 1));
+        const next = stream.firstUnchecked();
+        if (next != '_') {
+            n_digits -= @intCast(isize, next -| ('0' - 1));
+        } else {
+            stream.underscore_count += 1;
+        }
         stream.advance(1);
     }
     if (n_digits > 0) {
@@ -158,7 +167,7 @@ fn parsePartialNumber(s: []const u8, negative: bool, n: *usize) ?Number {
         exponent = blk: {
             if (mantissa >= min_19digit_int) {
                 // big int
-                break :blk @intCast(i64, int_end) - @intCast(i64, stream.offset);
+                break :blk @intCast(i64, int_end) - @intCast(i64, stream.offsetTrue());
             } else {
                 // the next byte must be present and be '.'
                 // We know this is true because we had more than 19
@@ -167,9 +176,9 @@ fn parsePartialNumber(s: []const u8, negative: bool, n: *usize) ?Number {
                 // than 19 digits. That means we must have a decimal
                 // point, and at least 1 fractional digit.
                 stream.advance(1);
-                var marker = stream.offset;
+                var marker = stream.offsetTrue();
                 tryParse19Digits(&stream, &mantissa);
-                break :blk @intCast(i64, marker) - @intCast(i64, stream.offset);
+                break :blk @intCast(i64, marker) - @intCast(i64, stream.offsetTrue());
             }
         };
         // add back the explicit part
@@ -224,4 +233,25 @@ pub fn parseInfOrNan(comptime T: type, s: []const u8, negative: bool) ?T {
         }
     }
     return null;
+}
+
+pub fn validUnderscores(s: []const u8) bool {
+    var i: usize = 0;
+    while (i < s.len) : (i += 1) {
+        if (s[i] == '_') {
+            // underscore at start of end
+            if (i == 0 or i + 1 == s.len) {
+                return false;
+            }
+            // consecutive underscores
+            if (!std.ascii.isDigit(s[i - 1]) or !std.ascii.isDigit(s[i + 1])) {
+                return false;
+            }
+
+            // next is guaranteed a digit, skip an extra
+            i += 1;
+        }
+    }
+
+    return true;
 }

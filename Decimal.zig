@@ -215,18 +215,20 @@ pub fn rightShift(self: *Decimal, shift: usize) void {
 }
 
 /// Parse a bit integer representation of the float as a decimal.
+// We do not verify underscores in this path since these will have been verified
+// via parse.parseNumber so can assume the number is well-formed.
 pub fn parse(s: []const u8) Decimal {
     var d = Decimal.new();
     var stream = FloatStream.init(s);
 
-    stream.skipChars('0');
+    stream.skipChars2('0', '_');
     while (stream.scanDigit()) |digit| {
         d.tryAddDigit(digit);
     }
 
     if (stream.firstIs('.')) {
         stream.advance(1);
-        const marker = stream.offset;
+        const marker = stream.offsetTrue();
 
         // Skip leading zeroes
         if (d.num_digits == 0) {
@@ -250,12 +252,12 @@ pub fn parse(s: []const u8) Decimal {
         while (stream.scanDigit()) |digit| {
             d.tryAddDigit(digit);
         }
-        d.decimal_point = @intCast(i32, marker) - @intCast(i32, stream.offset);
+        d.decimal_point = @intCast(i32, marker) - @intCast(i32, stream.offsetTrue());
     }
     if (d.num_digits != 0) {
         // Ignore trailing zeros if any
         var n_trailing_zeros: usize = 0;
-        var i = stream.offset - 1;
+        var i = stream.offsetTrue() - 1;
         while (true) {
             if (s[i] == '0') {
                 n_trailing_zeros += 1;

@@ -5,13 +5,20 @@ const FloatStream = @This();
 
 slice: []const u8,
 offset: usize,
+underscore_count: usize,
 
 pub fn init(s: []const u8) FloatStream {
-    return .{ .slice = s, .offset = 0 };
+    return .{ .slice = s, .offset = 0, .underscore_count = 0 };
+}
+
+// Returns the offset from the start *excluding* any underscores that were found.
+pub fn offsetTrue(self: FloatStream) usize {
+    return self.offset - self.underscore_count;
 }
 
 pub fn reset(self: *FloatStream) void {
     self.offset = 0;
+    self.underscore_count = 0;
 }
 
 pub fn len(self: FloatStream) usize {
@@ -54,6 +61,13 @@ pub fn firstIs2(self: FloatStream, c1: u8, c2: u8) bool {
     return false;
 }
 
+pub fn firstIs3(self: FloatStream, c1: u8, c2: u8, c3: u8) bool {
+    if (self.first()) |ok| {
+        return ok == c1 or ok == c2 or ok == c3;
+    }
+    return false;
+}
+
 pub fn firstIsDigit(self: FloatStream) bool {
     if (self.first()) |ok| {
         return std.ascii.isDigit(ok);
@@ -85,11 +99,17 @@ pub fn readU64(self: FloatStream) ?u64 {
 }
 
 pub fn scanDigit(self: *FloatStream) ?u8 {
-    if (self.first()) |ok| {
-        if ('0' <= ok and ok <= '9') {
-            self.advance(1);
-            return ok - '0';
+    retry: while (true) {
+        if (self.first()) |ok| {
+            if ('0' <= ok and ok <= '9') {
+                self.advance(1);
+                return ok - '0';
+            } else if (ok == '_') {
+                self.advance(1);
+                self.underscore_count += 1;
+                continue :retry;
+            }
         }
+        return null;
     }
-    return null;
 }

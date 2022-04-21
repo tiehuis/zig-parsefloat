@@ -36,7 +36,7 @@ pub fn convertSlow(comptime T: type, s: []const u8) BiasedFp {
     const infinite_power = (1 << math.floatExponentBits(T)) - 1;
     const mantissa_explicit_bits = math.floatMantissaBits(T);
 
-    var d = Decimal.parse(s);
+    var d = Decimal.parse(s); // no need to recheck underscores
     if (d.num_digits == 0 or d.decimal_point < -324) {
         return BiasedFp.zero();
     } else if (d.decimal_point >= 310) {
