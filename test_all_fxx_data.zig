@@ -2,6 +2,10 @@ const std = @import("std");
 const parseFloat = @import("parse_float.zig").parseFloat;
 //const parseFloat = std.fmt.parseFloat;
 
+const check_f16 = true;
+const check_f32 = true;
+const check_f64 = true;
+
 // f16 f32 f64 string_repr
 const TestCase = struct {
     f16_bits: u16,
@@ -72,23 +76,24 @@ pub fn main() !void {
             var failure = false;
 
             // All passing using fast then slow (not eisel-lemire)
-            if (true) {
-                if (tc.f16_bits != @bitCast(u16, try parseFloat(f16, tc.float_string))) {
-                    //std.debug.print(" | f16: {s}\n", .{tc.line[0..tc.line_len]});
+            if (check_f16) {
+                const f16_result = @bitCast(u16, try parseFloat(f16, tc.float_string));
+                if (tc.f16_bits != f16_result) {
+                    std.debug.print(" | f16: {s}: found 0x{x}\n", .{ tc.line[0..tc.line_len], f16_result });
                     failure = true;
                 }
             }
 
-            if (true) {
+            if (check_f32) {
                 if (tc.f32_bits != @bitCast(u32, try parseFloat(f32, tc.float_string))) {
-                    //std.debug.print(" | f32: {s}\n", .{tc.line[0..tc.line_len]});
+                    std.debug.print(" | f32: {s}\n", .{tc.line[0..tc.line_len]});
                     failure = true;
                 }
             }
 
-            if (true) {
+            if (check_f64) {
                 if (tc.f64_bits != @bitCast(u64, try parseFloat(f64, tc.float_string))) {
-                    //std.debug.print(" | f64: {s}\n", .{tc.line[0..tc.line_len]});
+                    std.debug.print(" | f64: {s}\n", .{tc.line[0..tc.line_len]});
                     failure = true;
                 }
             }

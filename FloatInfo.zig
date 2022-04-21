@@ -59,18 +59,18 @@ pub fn from(comptime T: type) Self {
             .max_exponent_fast_path_disguised = 7,
             .max_mantissa_fast_path = 2 << std.math.floatMantissaBits(T),
 
-            .smallest_power_of_ten = -8, // 5.96046447753906250000000000000000000e-8F16;
+            .smallest_power_of_ten = -26, // TODO: refine, fails one test
             .largest_power_of_ten = 4,
             .mantissa_explicit_bits = std.math.floatMantissaBits(T),
-            .minimum_exponent = -14,
+            .minimum_exponent = -15,
             // w >= (2m+1) * 5^-q and w < 2^64
-            // => 2m+1 > 2^9
-            // => 2^9*5^-q < 2^64
-            // => 5^-q < 2^55
+            // => 2m+1 > 2^11
+            // => 2^11*5^-q < 2^64
+            // => 5^-q < 2^53
             // => q >= -23
-            .min_exponent_round_to_even = -23,
-            // 5^q <= 2m+1 <= 2^8 or q <= 3
-            .max_exponent_round_to_even = 3,
+            .min_exponent_round_to_even = -22,
+            // 5^q <= 2m+1 <= 2^12 or q <= 5
+            .max_exponent_round_to_even = 5,
             .infinite_power = 0x1f,
         },
         f32 => .{

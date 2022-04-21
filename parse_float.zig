@@ -37,7 +37,7 @@ pub fn parseFloat(comptime T: type, s: []const u8) ParseFloatError!T {
         return f;
     }
 
-    if ((T == f32 or T == f64) and optimize) {
+    if (optimize) {
         // If significant digits were truncated, then we can have rounding error
         // only if `mantissa + 1` produces a different result. We also avoid
         // redundantly using the Eisel-Lemire algorithm if it was unable to

@@ -24,7 +24,7 @@ const Number = common.Number;
 /// section 6, "Exact Numbers And Ties", available online:
 /// <https://arxiv.org/abs/2101.11408.pdf>.
 pub fn convertEiselLemire(comptime T: type, q: i64, w_: u64) ?BiasedFp {
-    std.debug.assert(T == f32 or T == f64);
+    std.debug.assert(T == f16 or T == f32 or T == f64);
     var w = w_;
     const float_info = FloatInfo.from(T);
 
