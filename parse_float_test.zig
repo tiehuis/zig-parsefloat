@@ -40,7 +40,6 @@ test "fmt.parseFloat" {
         try expectEqual(try parseFloat(T, "1e-700"), 0);
         try expectEqual(try parseFloat(T, "1e+700"), std.math.inf(T));
 
-        // TODO: f128 nan differs during cast
         try expectEqual(@bitCast(Z, try parseFloat(T, "nAn")), @bitCast(Z, std.math.nan(T)));
         try expectEqual(try parseFloat(T, "inF"), std.math.inf(T));
         try expectEqual(try parseFloat(T, "-INF"), -std.math.inf(T));
