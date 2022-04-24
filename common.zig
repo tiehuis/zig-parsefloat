@@ -50,6 +50,8 @@ pub const Number = struct {
     negative: bool,
     /// More than 19 digits were found during parse
     many_digits: bool,
+    /// The number was a hex-float (e.g. 0x1.234p567)
+    hex: bool,
 };
 
 /// Determine if 8 bytes are all decimal digits.
@@ -58,4 +60,13 @@ pub fn isEightDigits(v: u64) bool {
     const a = v +% 0x4646_4646_4646_4646;
     const b = v -% 0x3030_3030_3030_3030;
     return ((a | b) & 0x8080_8080_8080_8080) == 0;
+}
+
+pub fn isDigit(c: u8, comptime base: u8) bool {
+    std.debug.assert(base == 10 or base == 16);
+
+    return if (base == 10)
+        '0' <= c and c <= '9'
+    else
+        '0' <= c and c <= '9' or 'a' <= c and c <= 'f' or 'A' <= c and c <= 'F';
 }

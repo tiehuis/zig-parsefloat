@@ -217,12 +217,14 @@ pub fn rightShift(self: *Decimal, shift: usize) void {
 /// Parse a bit integer representation of the float as a decimal.
 // We do not verify underscores in this path since these will have been verified
 // via parse.parseNumber so can assume the number is well-formed.
+// This code-path does not have to handle hex-floats since these will always be handled via another
+// function prior to this.
 pub fn parse(s: []const u8) Decimal {
     var d = Decimal.new();
     var stream = FloatStream.init(s);
 
     stream.skipChars2('0', '_');
-    while (stream.scanDigit()) |digit| {
+    while (stream.scanDigit(10)) |digit| {
         d.tryAddDigit(digit);
     }
 
@@ -249,7 +251,7 @@ pub fn parse(s: []const u8) Decimal {
             }
         }
 
-        while (stream.scanDigit()) |digit| {
+        while (stream.scanDigit(10)) |digit| {
             d.tryAddDigit(digit);
         }
         d.decimal_point = @intCast(i32, marker) - @intCast(i32, stream.offsetTrue());
@@ -286,7 +288,7 @@ pub fn parse(s: []const u8) Decimal {
             stream.advance(1);
         }
         var exp_num: i32 = 0;
-        while (stream.scanDigit()) |digit| {
+        while (stream.scanDigit(10)) |digit| {
             if (exp_num < 0x10000) {
                 exp_num = 10 * exp_num + digit;
             }

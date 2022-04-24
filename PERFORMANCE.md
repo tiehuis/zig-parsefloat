@@ -57,3 +57,33 @@ Executed in    2.74 secs    fish           external
    usr time    2.69 secs    0.00 micros    2.69 secs
    sys time    0.04 secs  924.00 micros    0.04 secs
 ```
+
+# commit: 6f91666daf6e22f5528d48b8862d6891bada8898
+
+build: `zig build-exe -O ReleaseFast test_all_fxx_data.zig`
+
+```
+time ./test_all_fxx_data
+ | f16: 0000 33000000 3E60000000000000 2.98023223876953125E-8: found 0x1
+5296693/5296694 succeeded (1 fail)
+
+________________________________________________________
+Executed in    2.81 secs    fish           external
+   usr time    2.75 secs  848.00 micros    2.75 secs
+   sys time    0.06 secs  204.00 micros    0.06 secs
+```
+
+Added initial hex-float parsing/conversion support. Note that these test cases
+do not have any hex-float cases. We are simply testing that the changes do not
+introduce unforeseen performance reductions in the common path.
+
+```
+time ./test_all_fxx_data
+ | f16: 0000 33000000 3E60000000000000 2.98023223876953125E-8: found 0x1
+5296693/5296694 succeeded (1 fail)
+
+________________________________________________________
+Executed in    2.76 secs    fish           external
+   usr time    2.71 secs  821.00 micros    2.71 secs
+   sys time    0.05 secs  201.00 micros    0.05 secs
+```

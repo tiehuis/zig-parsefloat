@@ -2,6 +2,7 @@
 
 const std = @import("std");
 const FloatStream = @This();
+const common = @import("common.zig");
 
 slice: []const u8,
 offset: usize,
@@ -68,9 +69,11 @@ pub fn firstIs3(self: FloatStream, c1: u8, c2: u8, c3: u8) bool {
     return false;
 }
 
-pub fn firstIsDigit(self: FloatStream) bool {
+pub fn firstIsDigit(self: FloatStream, comptime base: u8) bool {
+    comptime std.debug.assert(base == 10 or base == 16);
+
     if (self.first()) |ok| {
-        return std.ascii.isDigit(ok);
+        return common.isDigit(ok, base);
     }
     return false;
 }
@@ -98,12 +101,24 @@ pub fn readU64(self: FloatStream) ?u64 {
     return null;
 }
 
-pub fn scanDigit(self: *FloatStream) ?u8 {
+pub fn atUnchecked(self: *FloatStream, i: usize) u8 {
+    return self.slice[self.offset + i];
+}
+
+pub fn scanDigit(self: *FloatStream, comptime base: u8) ?u8 {
+    comptime std.debug.assert(base == 10 or base == 16);
+
     retry: while (true) {
         if (self.first()) |ok| {
             if ('0' <= ok and ok <= '9') {
                 self.advance(1);
                 return ok - '0';
+            } else if (base == 16 and 'a' <= ok and ok <= 'f') {
+                self.advance(1);
+                return ok - 'a' + 10;
+            } else if (base == 16 and 'A' <= ok and ok <= 'F') {
+                self.advance(1);
+                return ok - 'A' + 10;
             } else if (ok == '_') {
                 self.advance(1);
                 self.underscore_count += 1;

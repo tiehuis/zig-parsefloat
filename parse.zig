@@ -4,8 +4,6 @@ const FloatStream = @import("FloatStream.zig");
 const isEightDigits = common.isEightDigits;
 const Number = common.Number;
 
-const min_19digit_int: u64 = 100_0000_0000_0000_0000;
-
 /// Parse 8 digits, loaded as bytes in little-endian order.
 ///
 /// This uses the trick where every digit is in [0x030, 0x39],
@@ -27,15 +25,16 @@ fn parse8Digits(v_: u64) u64 {
 }
 
 /// Parse digits until a non-digit character is found.
-fn tryParseDigits(stream: *FloatStream, x: *u64) void {
-    while (stream.scanDigit()) |digit| {
-        x.* *%= 10;
+fn tryParseDigits(stream: *FloatStream, x: *u64, comptime base: u8) void {
+    while (stream.scanDigit(base)) |digit| {
+        x.* *%= base;
         x.* +%= digit;
     }
 }
 
 /// Try to parse 8 digits at a time, using an optimized algorithm.
-fn tryParse8Digits(stream: *FloatStream, x: *u64) void {
+/// This only support sdecimal digits.
+fn tryParse8DigitsBase10(stream: *FloatStream, x: *u64) void {
     if (stream.readU64()) |v| {
         if (isEightDigits(v)) {
             x.* = x.* *% 1_0000_0000 +% parse8Digits(v);
@@ -51,11 +50,18 @@ fn tryParse8Digits(stream: *FloatStream, x: *u64) void {
     }
 }
 
-/// Parse up to 19 digits (the max that can be stored in a 64-bit integer).
-fn tryParse19Digits(stream: *FloatStream, x: *u64) void {
-    while (x.* < min_19digit_int) {
-        if (stream.scanDigit()) |digit| {
-            x.* *%= 10;
+fn min_n_digit_int(digit_count: usize) u64 {
+    var n: u64 = 1;
+    var i: usize = 1;
+    while (i < digit_count) : (i += 1) n *= 10;
+    return n;
+}
+
+/// Parse up to N digits
+fn tryParseNDigits(stream: *FloatStream, x: *u64, comptime base: u8, comptime n: usize) void {
+    while (x.* < min_n_digit_int(n)) {
+        if (stream.scanDigit(base)) |digit| {
+            x.* *%= base;
             x.* +%= digit;
         } else {
             break;
@@ -64,7 +70,7 @@ fn tryParse19Digits(stream: *FloatStream, x: *u64) void {
 }
 
 /// Parse the scientific notation component of a float.
-fn parseScientific(stream: *FloatStream) ?i64 {
+fn parseScientific(stream: *FloatStream, comptime base: u8) ?i64 {
     var exponent: i64 = 0;
     var negative = false;
 
@@ -74,11 +80,11 @@ fn parseScientific(stream: *FloatStream) ?i64 {
             stream.advance(1);
         }
     }
-    if (stream.firstIsDigit()) {
-        while (stream.scanDigit()) |digit| {
+    if (stream.firstIsDigit(base)) {
+        while (stream.scanDigit(base)) |digit| {
             // no overflows here, saturate well before overflow
             if (exponent < 0x10000) {
-                exponent = 10 * exponent + digit;
+                exponent = base * exponent + digit;
             }
         }
 
@@ -88,17 +94,20 @@ fn parseScientific(stream: *FloatStream) ?i64 {
     return null;
 }
 
-/// Parse a partial, non-special floating point number.
-///
-/// This creates a representation of the float as the
-/// significant digits and the decimal exponent.
-fn parsePartialNumber(s: []const u8, negative: bool, n: *usize) ?Number {
-    std.debug.assert(s.len != 0);
-    var stream = FloatStream.init(s);
+const ParseInfo = struct {
+    // 10 or 16
+    base: u8,
+    // 10^19 fits in u64, 16^16 fits in u64
+    max_mantissa_digits: usize,
+    // e.g. e,E or p,P
+    exp_char: u8,
+    exp_char2: u8,
+};
 
+fn parsePartialNumberBase(stream: *FloatStream, negative: bool, n: *usize, comptime info: ParseInfo) ?Number {
     // parse initial digits before dot
     var mantissa: u64 = 0;
-    tryParseDigits(&stream, &mantissa);
+    tryParseDigits(stream, &mantissa, info.base);
     var int_end = stream.offsetTrue();
     var n_digits = @intCast(isize, stream.offsetTrue());
 
@@ -107,8 +116,9 @@ fn parsePartialNumber(s: []const u8, negative: bool, n: *usize) ?Number {
     if (stream.firstIs('.')) {
         stream.advance(1);
         const marker = stream.offsetTrue();
-        tryParse8Digits(&stream, &mantissa);
-        tryParseDigits(&stream, &mantissa);
+
+        if (info.base == 10) tryParse8DigitsBase10(stream, &mantissa); // base-10 optimization
+        tryParseDigits(stream, &mantissa, info.base);
 
         const n_after_dot = stream.offsetTrue() - marker;
         exponent = -@intCast(i64, n_after_dot);
@@ -121,30 +131,31 @@ fn parsePartialNumber(s: []const u8, negative: bool, n: *usize) ?Number {
 
     // handle scientific format
     var exp_number: i64 = 0;
-    if (stream.firstIs2('e', 'E')) {
+    if (stream.firstIs2(info.exp_char, info.exp_char2)) {
         stream.advance(1);
-        exp_number = parseScientific(&stream) orelse return null;
+        exp_number = parseScientific(stream, info.base) orelse return null;
         exponent += exp_number;
     }
 
     const len = stream.offset; // length must be complete parsed length
     n.* = len;
 
-    if (stream.underscore_count > 0 and !validUnderscores(s)) {
+    if (stream.underscore_count > 0 and !validUnderscores(stream.slice, info.base)) {
         return null;
     }
 
     // common case with not many digits
-    if (n_digits <= 19) {
+    if (n_digits <= info.max_mantissa_digits) {
         return Number{
             .exponent = exponent,
             .mantissa = mantissa,
             .negative = negative,
             .many_digits = false,
+            .hex = info.base == 16,
         };
     }
 
-    n_digits -= 19;
+    n_digits -= info.max_mantissa_digits;
     var many_digits = false;
     stream.reset(); // re-parse from beginning
     while (stream.firstIs3('0', '.', '_')) {
@@ -158,14 +169,14 @@ fn parsePartialNumber(s: []const u8, negative: bool, n: *usize) ?Number {
         stream.advance(1);
     }
     if (n_digits > 0) {
-        // at this point we have more than 19 significant digits, let's try again
+        // at this point we have more than max_mantissa_digits significant digits, let's try again
         many_digits = true;
         mantissa = 0;
         stream.reset();
-        tryParse19Digits(&stream, &mantissa);
+        tryParseNDigits(stream, &mantissa, info.base, info.max_mantissa_digits);
 
         exponent = blk: {
-            if (mantissa >= min_19digit_int) {
+            if (mantissa >= min_n_digit_int(info.max_mantissa_digits)) {
                 // big int
                 break :blk @intCast(i64, int_end) - @intCast(i64, stream.offsetTrue());
             } else {
@@ -177,7 +188,7 @@ fn parsePartialNumber(s: []const u8, negative: bool, n: *usize) ?Number {
                 // point, and at least 1 fractional digit.
                 stream.advance(1);
                 var marker = stream.offsetTrue();
-                tryParse19Digits(&stream, &mantissa);
+                tryParseNDigits(stream, &mantissa, info.base, info.max_mantissa_digits);
                 break :blk @intCast(i64, marker) - @intCast(i64, stream.offsetTrue());
             }
         };
@@ -190,7 +201,34 @@ fn parsePartialNumber(s: []const u8, negative: bool, n: *usize) ?Number {
         .mantissa = mantissa,
         .negative = negative,
         .many_digits = many_digits,
+        .hex = info.base == 16,
     };
+}
+
+/// Parse a partial, non-special floating point number.
+///
+/// This creates a representation of the float as the
+/// significant digits and the decimal exponent.
+fn parsePartialNumber(s: []const u8, negative: bool, n: *usize) ?Number {
+    std.debug.assert(s.len != 0);
+    var stream = FloatStream.init(s);
+
+    if (stream.hasLen(2) and stream.atUnchecked(0) == '0' and std.ascii.toLower(stream.atUnchecked(1)) == 'x') {
+        stream.advance(2);
+        return parsePartialNumberBase(&stream, negative, n, .{
+            .base = 16,
+            .max_mantissa_digits = 16,
+            .exp_char = 'p',
+            .exp_char2 = 'P',
+        });
+    } else {
+        return parsePartialNumberBase(&stream, negative, n, .{
+            .base = 10,
+            .max_mantissa_digits = 19,
+            .exp_char = 'e',
+            .exp_char2 = 'E',
+        });
+    }
 }
 
 pub fn parseNumber(s: []const u8, negative: bool) ?Number {
@@ -235,7 +273,7 @@ pub fn parseInfOrNan(comptime T: type, s: []const u8, negative: bool) ?T {
     return null;
 }
 
-pub fn validUnderscores(s: []const u8) bool {
+pub fn validUnderscores(s: []const u8, comptime base: u8) bool {
     var i: usize = 0;
     while (i < s.len) : (i += 1) {
         if (s[i] == '_') {
@@ -244,7 +282,7 @@ pub fn validUnderscores(s: []const u8) bool {
                 return false;
             }
             // consecutive underscores
-            if (!std.ascii.isDigit(s[i - 1]) or !std.ascii.isDigit(s[i + 1])) {
+            if (!common.isDigit(s[i - 1], base) or !common.isDigit(s[i + 1], base)) {
                 return false;
             }
 
