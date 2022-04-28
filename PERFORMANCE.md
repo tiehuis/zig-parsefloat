@@ -87,3 +87,34 @@ Executed in    2.76 secs    fish           external
    usr time    2.71 secs  821.00 micros    2.71 secs
    sys time    0.05 secs  201.00 micros    0.05 secs
 ```
+
+# commit: f468fef30d5e8bd20d5cc6439fee0fb54e9e70b0
+
+Fixed multi-digit scanning and applied to integer portion and not just
+scientific.
+
+## Before
+
+```
+$ time ./test_all_fxx_data
+ | f16: 0000 33000000 3E60000000000000 2.98023223876953125E-8: found 0x1
+5296693/5296694 succeeded (1 fail)
+
+________________________________________________________
+Executed in    2.69 secs    fish           external
+   usr time    2.66 secs  611.00 micros    2.66 secs
+   sys time    0.03 secs  117.00 micros    0.03 secs
+```
+
+## After
+
+```
+$ time ./test_all_fxx_data
+ | f16: 0000 33000000 3E60000000000000 2.98023223876953125E-8: found 0x1
+5296693/5296694 succeeded (1 fail)
+
+________________________________________________________
+Executed in    2.56 secs    fish           external
+   usr time    2.50 secs  881.00 micros    2.50 secs
+   sys time    0.06 secs  160.00 micros    0.06 secs
+```
