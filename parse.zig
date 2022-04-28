@@ -26,27 +26,23 @@ fn parse8Digits(v_: u64) u64 {
 
 /// Parse digits until a non-digit character is found.
 fn tryParseDigits(stream: *FloatStream, x: *u64, comptime base: u8) void {
+    // Try to parse 8 digits at a time, using an optimized algorithm.
+    // This only supports decimal digits.
+    if (base == 10) {
+        while (stream.hasLen(8)) {
+            const v = stream.readU64Unchecked();
+            if (!isEightDigits(v)) {
+                break;
+            }
+
+            x.* = x.* *% 1_0000_0000 +% parse8Digits(v);
+            stream.advance(8);
+        }
+    }
+
     while (stream.scanDigit(base)) |digit| {
         x.* *%= base;
         x.* +%= digit;
-    }
-}
-
-/// Try to parse 8 digits at a time, using an optimized algorithm.
-/// This only support sdecimal digits.
-fn tryParse8DigitsBase10(stream: *FloatStream, x: *u64) void {
-    if (stream.readU64()) |v| {
-        if (isEightDigits(v)) {
-            x.* = x.* *% 1_0000_0000 +% parse8Digits(v);
-            stream.advance(8);
-
-            if (stream.readU64()) |w| {
-                if (isEightDigits(w)) {
-                    x.* = x.* *% 1_0000_0000 +% parse8Digits(v);
-                    stream.advance(8);
-                }
-            }
-        }
     }
 }
 
@@ -116,10 +112,7 @@ fn parsePartialNumberBase(stream: *FloatStream, negative: bool, n: *usize, compt
     if (stream.firstIs('.')) {
         stream.advance(1);
         const marker = stream.offsetTrue();
-
-        if (info.base == 10) tryParse8DigitsBase10(stream, &mantissa); // base-10 optimization
         tryParseDigits(stream, &mantissa, info.base);
-
         const n_after_dot = stream.offsetTrue() - marker;
         exponent = -@intCast(i64, n_after_dot);
         n_digits += @intCast(isize, n_after_dot);

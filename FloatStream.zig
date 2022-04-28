@@ -91,7 +91,7 @@ pub fn skipChars2(self: *FloatStream, c1: u8, c2: u8) void {
 }
 
 pub fn readU64Unchecked(self: FloatStream) u64 {
-    return std.mem.readIntSliceLittle(u64, self.slice);
+    return std.mem.readIntSliceLittle(u64, self.slice[self.offset..]);
 }
 
 pub fn readU64(self: FloatStream) ?u64 {

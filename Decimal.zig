@@ -237,18 +237,14 @@ pub fn parse(s: []const u8) Decimal {
             stream.skipChars('0');
         }
 
-        // TODO: This is causing test failures. We are writing the start of the stream out again
-        // to the incorrect spot. Recheck logic.
-        if (false) {
-            while (stream.hasLen(8) and d.num_digits + 8 < max_digits) {
-                const v = stream.readU64Unchecked();
-                if (!isEightDigits(v)) {
-                    break;
-                }
-                std.mem.writeIntSliceLittle(u64, d.digits[d.num_digits..], v - 0x3030_3030_3030_3030);
-                d.num_digits += 8;
-                stream.advance(8);
+        while (stream.hasLen(8) and d.num_digits + 8 < max_digits) {
+            const v = stream.readU64Unchecked();
+            if (!isEightDigits(v)) {
+                break;
             }
+            std.mem.writeIntSliceLittle(u64, d.digits[d.num_digits..], v - 0x3030_3030_3030_3030);
+            d.num_digits += 8;
+            stream.advance(8);
         }
 
         while (stream.scanDigit(10)) |digit| {
