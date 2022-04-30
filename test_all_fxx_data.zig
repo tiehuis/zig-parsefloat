@@ -5,12 +5,14 @@ const parseFloat = @import("parse_float.zig").parseFloat;
 const check_f16 = true;
 const check_f32 = true;
 const check_f64 = true;
+const check_f128 = false;
 
 // f16 f32 f64 string_repr
 const TestCase = struct {
     f16_bits: u16,
     f32_bits: u32,
     f64_bits: u64,
+    f128_bits: u128,
     float_string: []const u8,
     line: [max_line_length]u8,
     line_len: usize,
@@ -26,6 +28,7 @@ pub fn scanLine(reader: anytype, testcase: *TestCase) !?*TestCase {
         testcase.f16_bits = try std.fmt.parseInt(u16, it.next().?, 16);
         testcase.f32_bits = try std.fmt.parseInt(u32, it.next().?, 16);
         testcase.f64_bits = try std.fmt.parseInt(u64, it.next().?, 16);
+        testcase.f128_bits = try std.fmt.parseInt(u128, it.next().?, 16);
         testcase.float_string = it.next().?; // testcase.line is stored with same lifetime as testcase.float_string
 
         return testcase;
@@ -74,26 +77,37 @@ pub fn main() !void {
         var tc: TestCase = undefined;
         while (try scanLine(stream, &tc)) |_| {
             var failure = false;
+            const tc_raw = tc.line[0..tc.line_len];
 
             // All passing using fast then slow (not eisel-lemire)
             if (check_f16) {
                 const f16_result = @bitCast(u16, try parseFloat(f16, tc.float_string));
                 if (tc.f16_bits != f16_result) {
-                    std.debug.print(" | f16: {s}: found 0x{x}\n", .{ tc.line[0..tc.line_len], f16_result });
+                    std.debug.print(" | f16: {s}, found 0x{x}\n", .{ tc_raw, f16_result });
                     failure = true;
                 }
             }
 
             if (check_f32) {
-                if (tc.f32_bits != @bitCast(u32, try parseFloat(f32, tc.float_string))) {
-                    std.debug.print(" | f32: {s}\n", .{tc.line[0..tc.line_len]});
+                const f32_result = @bitCast(u32, try parseFloat(f32, tc.float_string));
+                if (tc.f32_bits != f32_result) {
+                    std.debug.print(" | f32: {s}, found 0x{x}\n", .{ tc_raw, f32_result });
                     failure = true;
                 }
             }
 
             if (check_f64) {
-                if (tc.f64_bits != @bitCast(u64, try parseFloat(f64, tc.float_string))) {
-                    std.debug.print(" | f64: {s}\n", .{tc.line[0..tc.line_len]});
+                const f64_result = @bitCast(u64, try parseFloat(f64, tc.float_string));
+                if (tc.f64_bits != f64_result) {
+                    std.debug.print(" | f64: {s}, found 0x{x}\n", .{ tc_raw, f64_result });
+                    failure = true;
+                }
+            }
+
+            if (check_f128) {
+                const f128_result = @bitCast(u128, try parseFloat(f128, tc.float_string));
+                if (tc.f128_bits != f128_result) {
+                    std.debug.print(" | f128: {s}, found 0x{x}\n", .{ tc_raw, f128_result });
                     failure = true;
                 }
             }

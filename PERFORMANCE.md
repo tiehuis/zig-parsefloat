@@ -118,3 +118,20 @@ Executed in    2.56 secs    fish           external
    usr time    2.50 secs  881.00 micros    2.50 secs
    sys time    0.06 secs  160.00 micros    0.06 secs
 ```
+
+# commit: 410a5b4d715ee3ee32822bccbc37678977ea772d
+
+New test-data was added with f128 bit representations. This means extracting
+test data during the test_all_fxx_data programs' execution takes longer.
+
+Following excludes testing f128 parseFloat (only string extraction).
+
+```
+| f16: 0000 33000000 3E60000000000000 3FE60000000000000000000000000000 2.98023223876953125E-8, found 0x1
+5296693/5296694 succeeded (1 fail)
+
+________________________________________________________
+Executed in    4.55 secs    fish           external
+   usr time    4.48 secs    0.00 millis    4.48 secs
+   sys time    0.05 secs    1.47 millis    0.05 secs
+```
