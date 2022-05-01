@@ -55,6 +55,13 @@ pub fn firstIs(self: FloatStream, c: u8) bool {
     return false;
 }
 
+pub fn firstIsLower(self: FloatStream, c: u8) bool {
+    if (self.first()) |ok| {
+        return ok | 0x20 == c;
+    }
+    return false;
+}
+
 pub fn firstIs2(self: FloatStream, c1: u8, c2: u8) bool {
     if (self.first()) |ok| {
         return ok == c1 or ok == c2;

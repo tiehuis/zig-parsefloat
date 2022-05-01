@@ -95,9 +95,8 @@ const ParseInfo = struct {
     base: u8,
     // 10^19 fits in u64, 16^16 fits in u64
     max_mantissa_digits: usize,
-    // e.g. e,E or p,P
-    exp_char: u8,
-    exp_char2: u8,
+    // e.g. e or p (E and P also checked)
+    exp_char_lower: u8,
 };
 
 fn parsePartialNumberBase(stream: *FloatStream, negative: bool, n: *usize, comptime info: ParseInfo) ?Number {
@@ -129,7 +128,7 @@ fn parsePartialNumberBase(stream: *FloatStream, negative: bool, n: *usize, compt
 
     // handle scientific format
     var exp_number: i64 = 0;
-    if (stream.firstIs2(info.exp_char, info.exp_char2)) {
+    if (stream.firstIsLower(info.exp_char_lower)) {
         stream.advance(1);
         exp_number = parseScientific(stream) orelse return null;
         exponent += exp_number;
@@ -216,15 +215,13 @@ fn parsePartialNumber(s: []const u8, negative: bool, n: *usize) ?Number {
         return parsePartialNumberBase(&stream, negative, n, .{
             .base = 16,
             .max_mantissa_digits = 16,
-            .exp_char = 'p',
-            .exp_char2 = 'P',
+            .exp_char_lower = 'p',
         });
     } else {
         return parsePartialNumberBase(&stream, negative, n, .{
             .base = 10,
             .max_mantissa_digits = 19,
-            .exp_char = 'e',
-            .exp_char2 = 'E',
+            .exp_char_lower = 'e',
         });
     }
 }
