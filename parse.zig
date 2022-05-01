@@ -66,7 +66,7 @@ fn tryParseNDigits(stream: *FloatStream, x: *u64, comptime base: u8, comptime n:
 }
 
 /// Parse the scientific notation component of a float.
-fn parseScientific(stream: *FloatStream, comptime base: u8) ?i64 {
+fn parseScientific(stream: *FloatStream) ?i64 {
     var exponent: i64 = 0;
     var negative = false;
 
@@ -76,11 +76,11 @@ fn parseScientific(stream: *FloatStream, comptime base: u8) ?i64 {
             stream.advance(1);
         }
     }
-    if (stream.firstIsDigit(base)) {
-        while (stream.scanDigit(base)) |digit| {
+    if (stream.firstIsDigit(10)) {
+        while (stream.scanDigit(10)) |digit| {
             // no overflows here, saturate well before overflow
-            if (exponent < 0x10000) {
-                exponent = base * exponent + digit;
+            if (exponent < 0x1000_0000) {
+                exponent = 10 * exponent + digit;
             }
         }
 
@@ -118,6 +118,11 @@ fn parsePartialNumberBase(stream: *FloatStream, negative: bool, n: *usize, compt
         n_digits += @intCast(isize, n_after_dot);
     }
 
+    // adjust required shift to offset mantissa for base-16 (2^4)
+    if (info.base == 16) {
+        exponent *= 4;
+    }
+
     if (n_digits == 0) {
         return null;
     }
@@ -126,7 +131,7 @@ fn parsePartialNumberBase(stream: *FloatStream, negative: bool, n: *usize, compt
     var exp_number: i64 = 0;
     if (stream.firstIs2(info.exp_char, info.exp_char2)) {
         stream.advance(1);
-        exp_number = parseScientific(stream, info.base) orelse return null;
+        exp_number = parseScientific(stream) orelse return null;
         exponent += exp_number;
     }
 

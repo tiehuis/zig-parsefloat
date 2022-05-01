@@ -5,6 +5,7 @@ const parseInfOrNan = parse.parseInfOrNan;
 const convertFast = @import("convert_fast.zig").convertFast;
 const convertEiselLemire = @import("convert_eisel_lemire.zig").convertEiselLemire;
 const convertSlow = @import("convert_slow.zig").convertSlow;
+const convertHex = @import("convert_hex.zig").convertHex;
 
 const optimize = true;
 
@@ -32,6 +33,10 @@ pub fn parseFloat(comptime T: type, s: []const u8) ParseFloatError!T {
     const n = parse.parseNumber(s[i..], negative) orelse {
         return parse.parseInfOrNan(T, s[i..], negative) orelse error.Invalid;
     };
+
+    if (n.hex) {
+        return convertHex(T, n);
+    }
 
     if (optimize) {
         if (convertFast(T, n)) |f| {
