@@ -17,6 +17,10 @@ const floatFromU64 = common.floatFromU64;
 pub fn convertHex(comptime T: type, n_: Number) T {
     var n = n_;
 
+    if (n.mantissa == 0) {
+        return if (n.negative) -0.0 else 0.0;
+    }
+
     const max_exp = math.floatExponentMax(T);
     const min_exp = math.floatExponentMin(T);
     const mantissa_bits = math.floatMantissaBits(T);
@@ -72,9 +76,6 @@ pub fn convertHex(comptime T: type, n_: Number) T {
 
     // Infinity and range error
     if (n.exponent > max_exp) {
-        if (n.mantissa == 0) {
-            return 0; // 0 * n = 0
-        }
         return math.inf(T);
     }
 
