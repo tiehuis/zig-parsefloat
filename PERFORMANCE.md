@@ -135,3 +135,35 @@ Executed in    4.55 secs    fish           external
    usr time    4.48 secs    0.00 millis    4.48 secs
    sys time    0.05 secs    1.47 millis    0.05 secs
 ```
+
+# commit: 3f03583a30671508d9ba4d2c2b946c9d7cbe7a42
+
+Perform toLower on exponent-check instead of checking two characters for
+equality.
+
+
+## before
+
+```
+$ time ./test_all_fxx_data
+ | f16: 0000 33000000 3E60000000000000 3FE60000000000000000000000000000 2.98023223876953125E-8, found 0x1
+5296693/5296694 succeeded (1 fail)
+
+________________________________________________________
+Executed in    4.46 secs    fish           external
+   usr time    4.36 secs  597.00 micros    4.36 secs
+   sys time    0.10 secs  175.00 micros    0.10 secs
+```
+
+## after
+
+```
+$ time ./test_all_fxx_data
+ | f16: 0000 33000000 3E60000000000000 3FE60000000000000000000000000000 2.98023223876953125E-8, found 0x1
+5296693/5296694 succeeded (1 fail)
+
+________________________________________________________
+Executed in    4.35 secs    fish           external
+   usr time    4.27 secs  876.00 micros    4.27 secs
+   sys time    0.07 secs  107.00 micros    0.07 secs
+```
