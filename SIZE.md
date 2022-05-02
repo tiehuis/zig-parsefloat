@@ -3,7 +3,7 @@ some detail on the impact various changes had on the size of the resulting code.
 
 See `test/` directory and the `build` script for details.
 
-commit: 1c8d38833c1a8fbb8f02f09bbf4cb9c820e3c3b2
+commit: 14ed521f656bfa21f3c127a7073e8526aae44a5c
 
 Summary is size of the new library is a fair amount larger than the existing
 (fxx_std). This however is not too surprising since the old didn't accurately
