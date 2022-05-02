@@ -64,4 +64,4 @@ Before merging, complete the following:
 
 # f128 support
 
-Implemented in db7bfff803d000a781ca54f82b8f8b3f27ebbd19.
+Implemented in https://github.com/tiehuis/zig-parsefloat/commit/db7bfff803d000a781ca54f82b8f8b3f27ebbd19.
