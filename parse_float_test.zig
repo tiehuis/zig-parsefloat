@@ -10,8 +10,7 @@ const approxEqAbs = std.math.approxEqAbs;
 const epsilon = 1e-7;
 
 test "fmt.parseFloat" {
-    // TODO
-    //try expectEqual(@as(f16, 0), try parseFloat(f16, "2.98023223876953125E-8"));
+    //try expectEqual(@as(f16, 0), try parseFloat(f16, "2.98023223876953125E-8"));  // TODO: f16 failing test-case
 
     inline for ([_]type{ f16, f32, f64, f128 }) |T| {
         const Z = std.meta.Int(.unsigned, @typeInfo(T).Float.bits);
@@ -146,6 +145,6 @@ test "hex.f128" {
     try testing.expectEqual(try parseFloat(f128, "0x1p-16494"), math.floatTrueMin(f128));
     try testing.expectEqual(try parseFloat(f128, "-0x1p-16494"), -math.floatTrueMin(f128));
 
-    // TODO: We are performing round-to-even. Previous behavior was round-up.
+    // NOTE: We are performing round-to-even. Previous behavior was round-up.
     // try testing.expectEqual(try parseFloat(f128, "0x1.edcb34a235253948765432134674fp-1"), 0x1.edcb34a235253948765432134674fp-1);
 }

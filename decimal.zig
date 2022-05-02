@@ -23,7 +23,8 @@ const mantissaType = common.mantissaType;
 // the input with sufficient accuracy. Internally this means either a u64 mantissa (f16, f32 or f64)
 // or a u128 mantissa (f128).
 pub fn Decimal(comptime T: type) type {
-    const MT = mantissaType(T);
+    const MantissaT = mantissaType(T);
+    std.debug.assert(MantissaT == u64 or MantissaT == u128);
 
     return struct {
         const Self = @This();
@@ -51,19 +52,19 @@ pub fn Decimal(comptime T: type) type {
         ///     emin = -1022
         ///     p2 = 53
         ///
-        /// For f128, this fllows as:
+        /// For f128, this follows as:
         ///     emin = -16383
         ///     p2 = 112
         ///
         /// In Python:
         ///     `-emin + p2 + math.floor((emin+ 1)*math.log(2, b)-math.log(1-2**(-p2), b))`
-        pub const max_digits = if (MT == u64) 768 else 11564;
+        pub const max_digits = if (MantissaT == u64) 768 else 11564;
         /// The max digits that can be exactly represented in a 64-bit integer.
-        pub const max_digits_without_overflow = if (MT == u64) 19 else 38;
-        pub const decimal_point_range = if (MT == u64) 2047 else 32767;
-
-        pub const min_exponent = if (MT == u64) -324 else -4966;
-        pub const max_exponent = if (MT == u64) 310 else 4933;
+        pub const max_digits_without_overflow = if (MantissaT == u64) 19 else 38;
+        pub const decimal_point_range = if (MantissaT == u64) 2047 else 32767;
+        pub const min_exponent = if (MantissaT == u64) -324 else -4966;
+        pub const max_exponent = if (MantissaT == u64) 310 else 4933;
+        pub const max_decimal_digits = if (MantissaT == u64) 18 else 37;
 
         /// The number of significant digits in the decimal.
         num_digits: usize,
@@ -106,23 +107,21 @@ pub fn Decimal(comptime T: type) type {
             }
         }
 
-        pub fn round(self: *Self) MT {
+        pub fn round(self: *Self) MantissaT {
             if (self.num_digits == 0 or self.decimal_point < 0) {
                 return 0;
-            } else if (MT == u64 and self.decimal_point > 18) {
-                return 0xffff_ffff_ffff_ffff;
-            } else if (MT == u128 and self.decimal_point > 37) {
-                return 0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff;
+            } else if (self.decimal_point > max_decimal_digits) {
+                return math.maxInt(MantissaT);
             }
 
             const dp = @intCast(usize, self.decimal_point);
-            var n: MT = 0;
+            var n: MantissaT = 0;
 
             var i: usize = 0;
             while (i < dp) : (i += 1) {
                 n *= 10;
                 if (i < self.num_digits) {
-                    n += @as(MT, self.digits[i]);
+                    n += @as(MantissaT, self.digits[i]);
                 }
             }
 
@@ -147,11 +146,11 @@ pub fn Decimal(comptime T: type) type {
             const num_new_digits = self.numberOfDigitsLeftShift(shift);
             var read_index = self.num_digits;
             var write_index = self.num_digits + num_new_digits;
-            var n: MT = 0;
+            var n: MantissaT = 0;
             while (read_index != 0) {
                 read_index -= 1;
                 write_index -= 1;
-                n += math.shl(MT, self.digits[read_index], shift);
+                n += math.shl(MantissaT, self.digits[read_index], shift);
 
                 const quotient = n / 10;
                 const remainder = n - (10 * quotient);
@@ -187,15 +186,15 @@ pub fn Decimal(comptime T: type) type {
         pub fn rightShift(self: *Self, shift: usize) void {
             var read_index: usize = 0;
             var write_index: usize = 0;
-            var n: MT = 0;
-            while (math.shr(MT, n, shift) == 0) {
+            var n: MantissaT = 0;
+            while (math.shr(MantissaT, n, shift) == 0) {
                 if (read_index < self.num_digits) {
                     n = (10 * n) + self.digits[read_index];
                     read_index += 1;
                 } else if (n == 0) {
                     return;
                 } else {
-                    while (math.shr(MT, n, shift) == 0) {
+                    while (math.shr(MantissaT, n, shift) == 0) {
                         n *= 10;
                         read_index += 1;
                     }
@@ -211,16 +210,16 @@ pub fn Decimal(comptime T: type) type {
                 return;
             }
 
-            const mask = math.shl(MT, 1, shift) - 1;
+            const mask = math.shl(MantissaT, 1, shift) - 1;
             while (read_index < self.num_digits) {
-                const new_digit = @intCast(u8, math.shr(MT, n, shift));
+                const new_digit = @intCast(u8, math.shr(MantissaT, n, shift));
                 n = (10 * (n & mask)) + self.digits[read_index];
                 read_index += 1;
                 self.digits[write_index] = new_digit;
                 write_index += 1;
             }
             while (n > 0) {
-                const new_digit = @intCast(u8, math.shr(MT, n, shift));
+                const new_digit = @intCast(u8, math.shr(MantissaT, n, shift));
                 n = 10 * (n & mask);
                 if (write_index < max_digits) {
                     self.digits[write_index] = new_digit;

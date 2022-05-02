@@ -6,7 +6,7 @@ const std = @import("std");
 const math = std.math;
 const common = @import("common.zig");
 const Number = common.Number;
-const floatFromU64 = common.floatFromU64;
+const floatFromUnsigned = common.floatFromUnsigned;
 
 // converts the form 0xMMM.NNNpEEE.
 //
@@ -15,7 +15,7 @@ const floatFromU64 = common.floatFromU64;
 //
 // MMM.NNN is stored as an integer, the exponent is offset.
 pub fn convertHex(comptime T: type, n_: Number(T)) T {
-    const MT = common.mantissaType(T);
+    const MantissaT = common.mantissaType(T);
     var n = n_;
 
     if (n.mantissa == 0) {
@@ -81,9 +81,9 @@ pub fn convertHex(comptime T: type, n_: Number(T)) T {
     }
 
     var bits = n.mantissa & ((1 << mantissa_bits) - 1);
-    bits |= @intCast(MT, (n.exponent - exp_bias) & ((1 << exp_bits) - 1)) << mantissa_bits;
+    bits |= @intCast(MantissaT, (n.exponent - exp_bias) & ((1 << exp_bits) - 1)) << mantissa_bits;
     if (n.negative) {
         bits |= 1 << (mantissa_bits + exp_bits);
     }
-    return common.floatFromUint(T, MT, bits);
+    return floatFromUnsigned(T, MantissaT, bits);
 }

@@ -14,7 +14,7 @@ max_exponent_fast_path_disguised: comptime_int,
 // Maximum mantissa for the fast-path (`1 << 53` for f64).
 max_mantissa_fast_path: comptime_int,
 
-// Smallest decimal exponent for a non-zero value.
+// Smallest decimal exponent for a non-zero value. Including subnormals.
 smallest_power_of_ten: comptime_int,
 
 // Largest decimal exponent for a non-infinite value.
@@ -50,18 +50,21 @@ max_exponent_round_to_even: comptime_int,
 // Largest exponent value `(1 << EXP_BITS) - 1`.
 infinite_power: comptime_int,
 
-// TODO: Compute based on derived properties instead of hardcoded structures.
+// Following should compute based on derived calculations where possible.
 pub fn from(comptime T: type) Self {
     return switch (T) {
         f16 => .{
+            // Fast-Path
             .min_exponent_fast_path = -4,
             .max_exponent_fast_path = 4,
             .max_exponent_fast_path_disguised = 7,
             .max_mantissa_fast_path = 2 << std.math.floatMantissaBits(T),
-
+            // Slow + Eisel-Lemire
+            .mantissa_explicit_bits = std.math.floatMantissaBits(T),
+            .infinite_power = 0x1f,
+            // Eisel-Lemire
             .smallest_power_of_ten = -26, // TODO: refine, fails one test
             .largest_power_of_ten = 4,
-            .mantissa_explicit_bits = std.math.floatMantissaBits(T),
             .minimum_exponent = -15,
             // w >= (2m+1) * 5^-q and w < 2^64
             // => 2m+1 > 2^11
@@ -69,51 +72,59 @@ pub fn from(comptime T: type) Self {
             // => 5^-q < 2^53
             // => q >= -23
             .min_exponent_round_to_even = -22,
-            // 5^q <= 2m+1 <= 2^12 or q <= 5
             .max_exponent_round_to_even = 5,
-            .infinite_power = 0x1f,
         },
         f32 => .{
+            // Fast-Path
             .min_exponent_fast_path = -10,
             .max_exponent_fast_path = 10,
             .max_exponent_fast_path_disguised = 17,
             .max_mantissa_fast_path = 2 << std.math.floatMantissaBits(T),
-
+            // Slow + Eisel-Lemire
+            .mantissa_explicit_bits = std.math.floatMantissaBits(T),
+            .infinite_power = 0xff,
+            // Eisel-Lemire
             .smallest_power_of_ten = -65,
             .largest_power_of_ten = 38,
-            .mantissa_explicit_bits = std.math.floatMantissaBits(T),
             .minimum_exponent = -127,
             .min_exponent_round_to_even = -17,
             .max_exponent_round_to_even = 10,
-            .infinite_power = 0xff,
         },
         f64 => .{
+            // Fast-Path
             .min_exponent_fast_path = -22,
             .max_exponent_fast_path = 22,
             .max_exponent_fast_path_disguised = 37,
             .max_mantissa_fast_path = 2 << std.math.floatMantissaBits(T),
-
+            // Slow + Eisel-Lemire
+            .mantissa_explicit_bits = std.math.floatMantissaBits(T),
+            .infinite_power = 0x7ff,
+            // Eisel-Lemire
             .smallest_power_of_ten = -342,
             .largest_power_of_ten = 308,
-            .mantissa_explicit_bits = std.math.floatMantissaBits(T),
             .minimum_exponent = -1023,
             .min_exponent_round_to_even = -4,
             .max_exponent_round_to_even = 23,
-            .infinite_power = 0x7ff,
         },
         f128 => .{
+            // Fast-Path
             .min_exponent_fast_path = -48,
             .max_exponent_fast_path = 48,
             .max_exponent_fast_path_disguised = 82,
             .max_mantissa_fast_path = 2 << std.math.floatMantissaBits(T),
-
+            // Slow + Eisel-Lemire
+            .mantissa_explicit_bits = std.math.floatMantissaBits(T),
+            .infinite_power = 0x7fff,
+            // Eisel-Lemire.
+            // NOTE: Not yet tested (no f128 eisel-lemire implementation)
             .smallest_power_of_ten = -4966,
             .largest_power_of_ten = 4932,
-            .mantissa_explicit_bits = std.math.floatMantissaBits(T),
             .minimum_exponent = -16382,
-            .min_exponent_round_to_even = 0, // TODO
-            .max_exponent_round_to_even = 0, // TODO
-            .infinite_power = 0x7fff,
+            // 2^113 * 5^-q < 2^128
+            // 5^-q < 2^15
+            // => q >= -6
+            .min_exponent_round_to_even = -6,
+            .max_exponent_round_to_even = 49,
         },
         else => unreachable,
     };

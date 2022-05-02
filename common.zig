@@ -1,16 +1,16 @@
 const std = @import("std");
 
-/// A custom 64-bit floating point type, representing `f * 2^e`.
+/// A custom N-bit floating point type, representing `f * 2^e`.
 /// e is biased, so it be directly shifted into the exponent bits.
 /// Negative exponent indicates an invalid result.
 pub fn BiasedFp(comptime T: type) type {
-    const MT = mantissaType(T);
+    const MantissaT = mantissaType(T);
 
     return struct {
         const Self = @This();
 
         /// The significant digits.
-        f: MT,
+        f: MantissaT,
         /// The biased, binary exponent.
         e: i32,
 
@@ -22,25 +22,25 @@ pub fn BiasedFp(comptime T: type) type {
             return .{ .f = 0, .e = e };
         }
 
-        pub fn inf(comptime FT: type) Self {
-            return .{ .f = 0, .e = (1 << std.math.floatExponentBits(FT)) - 1 };
+        pub fn inf(comptime FloatT: type) Self {
+            return .{ .f = 0, .e = (1 << std.math.floatExponentBits(FloatT)) - 1 };
         }
 
         pub fn eql(self: Self, other: Self) bool {
             return self.f == other.f and self.e == other.e;
         }
 
-        pub fn toFloat(self: Self, comptime FT: type, negative: bool) FT {
+        pub fn toFloat(self: Self, comptime FloatT: type, negative: bool) FloatT {
             var word = self.f;
-            word |= @intCast(MT, self.e) << std.math.floatMantissaBits(FT);
-            var f = floatFromUint(FT, MT, word);
+            word |= @intCast(MantissaT, self.e) << std.math.floatMantissaBits(FloatT);
+            var f = floatFromUnsigned(FloatT, MantissaT, word);
             if (negative) f = -f;
             return f;
         }
     };
 }
 
-pub fn floatFromUint(comptime T: type, comptime MT: type, v: MT) T {
+pub fn floatFromUnsigned(comptime T: type, comptime MantissaT: type, v: MantissaT) T {
     return switch (T) {
         f16 => @bitCast(f16, @truncate(u16, v)),
         f32 => @bitCast(f32, @truncate(u32, v)),
@@ -56,7 +56,7 @@ pub fn Number(comptime T: type) type {
         exponent: i64,
         mantissa: mantissaType(T),
         negative: bool,
-        /// More than 19 digits were found during parse
+        /// More than max_mantissa digits were found during parse
         many_digits: bool,
         /// The number was a hex-float (e.g. 0x1.234p567)
         hex: bool,
@@ -80,10 +80,12 @@ pub fn isDigit(c: u8, comptime base: u8) bool {
         '0' <= c and c <= '9' or 'a' <= c and c <= 'f' or 'A' <= c and c <= 'F';
 }
 
+/// Returns the underlying storage type used for the mantissa of floating-point type.
+/// The output unsigned type must have at least as many bits as the input floating-point type.
 pub fn mantissaType(comptime T: type) type {
     return switch (T) {
         f16, f32, f64 => u64,
         f128 => u128,
-        else => @compileError("unsupported type " ++ @typeName(T)),
+        else => unreachable,
     };
 }

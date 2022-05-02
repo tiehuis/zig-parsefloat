@@ -39,14 +39,9 @@ Before merging, complete the following:
  - [x] Allow underscores according to zig spec in floating point literals
  - [x] support for hex-floats in parseFloat directly (currently uses
    parseHexFloat separate function).
- - [ ] Fix eisel-lemire algorithm for f16
- - [ ] Consider f128 support mechanism. Likely push back to a later commit.
+ - [ ] Fix eisel-lemire algorithm for f16 (1 in 5 million test cases failing).
+ - [x] Consider f128 support mechanism. Likely push back to a later commit.
 
 # f128 support
 
-Initial support will likely be via duplicating Decimal, increasing the stack
-space and internal representation to use a u128. Then, using the fast-path and
-slow-path only (no eisel-lemire). Note that the standard parsing routine would
-need modification to support u128 internally. I do not want to do this
-generically for all cases since I expect it to be much slower in the non-f128
-case.
+Implemented in db7bfff803d000a781ca54f82b8f8b3f27ebbd19.
