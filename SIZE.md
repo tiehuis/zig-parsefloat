@@ -3,15 +3,14 @@ some detail on the impact various changes had on the size of the resulting code.
 
 See `test/` directory and the `build` script for details.
 
-commit: 14ed521f656bfa21f3c127a7073e8526aae44a5c
+# commit: 14ed521f656bfa21f3c127a7073e8526aae44a5c
 
 Summary is size of the new library is a fair amount larger than the existing
 (fxx_std). This however is not too surprising since the old didn't accurately
 convert all values and is an order of magnitude slower (for f64 or smaller).
 
-```
-zig build-lib -O ReleaseFast --strip
-```
+
+## `zig build-lib -O ReleaseFast --strip`
 
 ```
 libtest_size_c_f128.a
@@ -86,9 +85,7 @@ libtest_size_c_fxx_std.a
  100.0%  18.2Ki 100.0%  12.3Ki    TOTAL
 ```
 
-```
-zig build-lib -O ReleaseSmall --strip
-```
+## `zig build-lib -O ReleaseSmall --strip`
 
 ```
 libtest_size_c_f128.a
