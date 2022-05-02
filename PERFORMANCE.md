@@ -1,3 +1,6 @@
+This file outlines performance at specific commits in the project and provides
+some detail on the impact various changes had on a runtime performance metric.
+
 # commit: 7c0eb4d66e5a77883e5b36e031605f8a497a8c45
 
 build: `zig build-exe -O ReleaseFast test_all_fxx_data.zig`
@@ -166,4 +169,30 @@ ________________________________________________________
 Executed in    4.35 secs    fish           external
    usr time    4.27 secs  876.00 micros    4.27 secs
    sys time    0.07 secs  107.00 micros    0.07 secs
+```
+
+# commit: db7bfff803d000a781ca54f82b8f8b3f27ebbd19
+
+Test full f128 using slow-path alongside f16, f32 and f64.
+
+```
+ | f16: 0000 33000000 3E60000000000000 3FE60000000000000000000000000000 2.98023223876953125E-8, found 0x1
+5296693/5296694 succeeded (1 fail)
+
+________________________________________________________
+Executed in  641.67 secs    fish           external
+   usr time  632.48 secs    1.05 millis  632.48 secs
+   sys time    0.86 secs    0.19 millis    0.86 secs
+```
+
+Test f16, f32 and f64 without f128 (ensure no regression)
+
+```
+ | f16: 0000 33000000 3E60000000000000 3FE60000000000000000000000000000 2.98023223876953125E-8, found 0x1
+5296693/5296694 succeeded (1 fail)
+
+________________________________________________________
+Executed in    4.52 secs    fish           external
+   usr time    4.34 secs  986.00 micros    4.34 secs
+   sys time    0.08 secs  178.00 micros    0.08 secs
 ```
