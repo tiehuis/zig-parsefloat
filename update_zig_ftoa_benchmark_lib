@@ -1,0 +1,6 @@
+zig build-lib -O ReleaseFast -fPIE \
+    --pkg-begin parse_float parse_float.zig --pkg-end \
+    test/test_size_c_fxx.zig && \
+    \
+    mv libtest_size_c_fxx.a simple_fastfloat_benchmark/vendor/libzig_ftoa.a
+

@@ -32,6 +32,26 @@ This function will:
  4. If not succesful, convert using a big decimal type. This will always be
     work.
 
+# Performance Testing
+
+This repo vendors https://github.com/tiehuis/simple_fastfloat_benchmark.
+
+```
+cmake -B build simple_fastfloat_benchmark
+cmake --build build
+./simple_fastfloat_benchmark/run_bench.sh
+```
+
+If you make changes to the zig parseFloat function in this repo. Perform the
+following to update the benchmark program.
+
+```
+./update_zig_ftoa_benchmark_lib # Update the vendored library
+cmake --build build
+./simple_fastfloat_benchmark/run_bench.sh
+```
+
+
 # TODO
 
 Before merging, complete the following:
