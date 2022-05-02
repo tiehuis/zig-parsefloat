@@ -1,3 +1,6 @@
 [submodule "parse-number-fxx-test-data"]
 	path = parse-number-fxx-test-data
 	url = https://github.com/tiehuis/parse-number-fxx-test-data
+[submodule "simple_fastfloat_benchmark"]
+	path = simple_fastfloat_benchmark
+	url = https://github.com/tiehuis/simple_fastfloat_benchmark.git
