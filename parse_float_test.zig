@@ -13,8 +13,7 @@ test "fmt.parseFloat" {
     // TODO
     //try expectEqual(@as(f16, 0), try parseFloat(f16, "2.98023223876953125E-8"));
 
-    // TODO: f128
-    inline for ([_]type{ f16, f32, f64 }) |T| {
+    inline for ([_]type{ f16, f32, f64, f128 }) |T| {
         const Z = std.meta.Int(.unsigned, @typeInfo(T).Float.bits);
 
         try testing.expectError(error.Empty, parseFloat(T, ""));
@@ -38,8 +37,8 @@ test "fmt.parseFloat" {
         try expect(approxEqAbs(T, try parseFloat(T, "3.141"), 3.141, epsilon));
         try expect(approxEqAbs(T, try parseFloat(T, "-3.141"), -3.141, epsilon));
 
-        try expectEqual(try parseFloat(T, "1e-700"), 0);
-        try expectEqual(try parseFloat(T, "1e+700"), std.math.inf(T));
+        try expectEqual(try parseFloat(T, "1e-5000"), 0);
+        try expectEqual(try parseFloat(T, "1e+5000"), std.math.inf(T));
 
         try expectEqual(@bitCast(Z, try parseFloat(T, "nAn")), @bitCast(Z, std.math.nan(T)));
         try expectEqual(try parseFloat(T, "inF"), std.math.inf(T));
@@ -55,16 +54,18 @@ test "fmt.parseFloat" {
         try expectError(error.Invalid, parseFloat(T, "0123456_.789000e0010")); // cannot occur before decimal point
         try expectError(error.Invalid, parseFloat(T, "0123456.789000e0010_")); // cannot occur at end of number
 
-        if (T != f16) {
-            try expect(approxEqAbs(T, try parseFloat(T, "1e-2"), 0.01, epsilon));
-            try expect(approxEqAbs(T, try parseFloat(T, "1234e-2"), 12.34, epsilon));
+        try expect(approxEqAbs(T, try parseFloat(T, "1e-2"), 0.01, epsilon));
+        try expect(approxEqAbs(T, try parseFloat(T, "1234e-2"), 12.34, epsilon));
 
-            try expect(approxEqAbs(T, try parseFloat(T, "123142.1"), 123142.1, epsilon));
-            try expect(approxEqAbs(T, try parseFloat(T, "-123142.1124"), @as(T, -123142.1124), epsilon));
-            try expect(approxEqAbs(T, try parseFloat(T, "0.7062146892655368"), @as(T, 0.7062146892655368), epsilon));
-            try expect(approxEqAbs(T, try parseFloat(T, "2.71828182845904523536"), @as(T, 2.718281828459045), epsilon));
-        }
+        try expect(approxEqAbs(T, try parseFloat(T, "123142.1"), 123142.1, epsilon));
+        try expect(approxEqAbs(T, try parseFloat(T, "-123142.1124"), @as(T, -123142.1124), epsilon));
+        try expect(approxEqAbs(T, try parseFloat(T, "0.7062146892655368"), @as(T, 0.7062146892655368), epsilon));
+        try expect(approxEqAbs(T, try parseFloat(T, "2.71828182845904523536"), @as(T, 2.718281828459045), epsilon));
     }
+}
+
+test "issue #11169" {
+    try expectEqual(try parseFloat(f128, "9007199254740993.0"), 9007199254740993.0);
 }
 
 test "hex.special" {
