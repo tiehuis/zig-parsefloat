@@ -1,0 +1,12 @@
+#!/bin/bash
+
+build() {
+    zig build-lib -O ReleaseSmall --strip --pkg-begin parse_float ../parse_float.zig --pkg-end "$1.zig"
+    echo "lib$1.a"
+    bloaty "lib$1.a"
+}
+
+build test_size_c_f128
+build test_size_c_f64
+build test_size_c_fxx
+build test_size_c_fxx_std

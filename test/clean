@@ -1,0 +1,5 @@
+rm -f \
+    libtest_size_c_f128.a \
+    libtest_size_c_f64.a \
+    libtest_size_c_fxx.a \
+    libtest_size_c_fxx_std.a
