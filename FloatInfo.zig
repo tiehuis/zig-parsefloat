@@ -101,6 +101,20 @@ pub fn from(comptime T: type) Self {
             .max_exponent_round_to_even = 23,
             .infinite_power = 0x7ff,
         },
+        f128 => .{
+            .min_exponent_fast_path = -48,
+            .max_exponent_fast_path = 48,
+            .max_exponent_fast_path_disguised = 82,
+            .max_mantissa_fast_path = 2 << std.math.floatMantissaBits(T),
+
+            .smallest_power_of_ten = -4966,
+            .largest_power_of_ten = 4932,
+            .mantissa_explicit_bits = std.math.floatMantissaBits(T),
+            .minimum_exponent = -16382,
+            .min_exponent_round_to_even = 0, // TODO
+            .max_exponent_round_to_even = 0, // TODO
+            .infinite_power = 0x7fff,
+        },
         else => unreachable,
     };
 }

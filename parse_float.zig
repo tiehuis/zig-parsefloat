@@ -30,7 +30,7 @@ pub fn parseFloat(comptime T: type, s: []const u8) ParseFloatError!T {
         return error.Invalid;
     }
 
-    const n = parse.parseNumber(s[i..], negative) orelse {
+    const n = parse.parseNumber(T, s[i..], negative) orelse {
         return parse.parseInfOrNan(T, s[i..], negative) orelse error.Invalid;
     };
 
@@ -43,17 +43,19 @@ pub fn parseFloat(comptime T: type, s: []const u8) ParseFloatError!T {
             return f;
         }
 
-        // If significant digits were truncated, then we can have rounding error
-        // only if `mantissa + 1` produces a different result. We also avoid
-        // redundantly using the Eisel-Lemire algorithm if it was unable to
-        // correctly round on the first pass.
-        if (convertEiselLemire(T, n.exponent, n.mantissa)) |bf| {
-            if (!n.many_digits) {
-                return bf.toFloat(T, n.negative);
-            }
-            if (convertEiselLemire(T, n.exponent, n.mantissa + 1)) |bf2| {
-                if (bf.eql(bf2)) {
+        if (T == f16 or T == f32 or T == f64) {
+            // If significant digits were truncated, then we can have rounding error
+            // only if `mantissa + 1` produces a different result. We also avoid
+            // redundantly using the Eisel-Lemire algorithm if it was unable to
+            // correctly round on the first pass.
+            if (convertEiselLemire(T, n.exponent, n.mantissa)) |bf| {
+                if (!n.many_digits) {
                     return bf.toFloat(T, n.negative);
+                }
+                if (convertEiselLemire(T, n.exponent, n.mantissa + 1)) |bf2| {
+                    if (bf.eql(bf2)) {
+                        return bf.toFloat(T, n.negative);
+                    }
                 }
             }
         }

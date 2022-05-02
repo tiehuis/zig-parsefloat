@@ -5,6 +5,8 @@ const FloatInfo = @import("FloatInfo.zig");
 const BiasedFp = common.BiasedFp;
 const Number = common.Number;
 
+const BiasedFp_ = BiasedFp(f64);
+
 /// Compute a float using an extended-precision representation.
 ///
 /// Fast conversion of a the significant digits and decimal exponent
@@ -23,16 +25,16 @@ const Number = common.Number;
 /// at a Gigabyte per Second" in section 5, "Fast Algorithm", and
 /// section 6, "Exact Numbers And Ties", available online:
 /// <https://arxiv.org/abs/2101.11408.pdf>.
-pub fn convertEiselLemire(comptime T: type, q: i64, w_: u64) ?BiasedFp {
+pub fn convertEiselLemire(comptime T: type, q: i64, w_: u64) ?BiasedFp_ {
     std.debug.assert(T == f16 or T == f32 or T == f64);
     var w = w_;
     const float_info = FloatInfo.from(T);
 
     // Short-circuit if the value can only be a literal 0 or infinity.
     if (w == 0 or q < float_info.smallest_power_of_ten) {
-        return BiasedFp.zero();
+        return BiasedFp_.zero();
     } else if (q > float_info.largest_power_of_ten) {
-        return BiasedFp.inf(T);
+        return BiasedFp_.inf(T);
     }
 
     // Normalize our significant digits, so the most-significant bit is set.
@@ -68,14 +70,14 @@ pub fn convertEiselLemire(comptime T: type, q: i64, w_: u64) ?BiasedFp {
     if (power2 <= 0) {
         if (-power2 + 1 >= 64) {
             // Have more than 64 bits below the minimum exponent, must be 0.
-            return BiasedFp.zero();
+            return BiasedFp_.zero();
         }
         // Have a subnormal value.
         mantissa = math.shr(u64, mantissa, -power2 + 1);
         mantissa += mantissa & 1;
         mantissa >>= 1;
         power2 = @boolToInt(mantissa >= (1 << float_info.mantissa_explicit_bits));
-        return BiasedFp{ .f = mantissa, .e = power2 };
+        return BiasedFp_{ .f = mantissa, .e = power2 };
     }
 
     // Need to handle rounding ties. Normally, we need to round up,
@@ -114,10 +116,10 @@ pub fn convertEiselLemire(comptime T: type, q: i64, w_: u64) ?BiasedFp {
     mantissa &= ~(@as(u64, 1) << float_info.mantissa_explicit_bits);
     if (power2 >= float_info.infinite_power) {
         // Exponent is above largest normal value, must be infinite
-        return BiasedFp.inf(T);
+        return BiasedFp_.inf(T);
     }
 
-    return BiasedFp{ .f = mantissa, .e = power2 };
+    return BiasedFp_{ .f = mantissa, .e = power2 };
 }
 
 /// Calculate a base 2 exponent from a decimal exponent.

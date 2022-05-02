@@ -15,7 +15,7 @@ const FloatInfo = @import("FloatInfo.zig");
 const Number = common.Number;
 const floatFromU64 = common.floatFromU64;
 
-fn isFastPath(comptime T: type, n: Number) bool {
+fn isFastPath(comptime T: type, n: Number(T)) bool {
     const info = FloatInfo.from(T);
 
     return info.min_exponent_fast_path <= n.exponent and
@@ -27,7 +27,7 @@ fn isFastPath(comptime T: type, n: Number) bool {
 // upper bound for tables is floor(mantissaDigits(T) / log2(5))
 // for f64 this is floor(53 / log2(5)) = 22.
 //
-// we only support f64 maximum at this stage
+// Must have max_disguised_fast_path - max_exponent_fast_path entries. (82 - 48 = 34 for f128)
 fn fastPow10(comptime T: type, i: usize) T {
     return switch (T) {
         f16 => ([8]f16{
@@ -61,14 +61,72 @@ fn fastPow10(comptime T: type, i: usize) T {
     };
 }
 
-const int_pow10 = [_]u64{
-    1,             10,             100,             1000,
-    10000,         100000,         1000000,         10000000,
-    100000000,     1000000000,     10000000000,     100000000000,
-    1000000000000, 10000000000000, 100000000000000, 1000000000000000,
-};
+fn fastIntPow10(comptime T: type, i: usize) T {
+    return switch (T) {
+        u64 => ([16]u64{
+            1,
+            10,
+            100,
+            1000,
+            10000,
+            100000,
+            1000000,
+            10000000,
+            100000000,
+            1000000000,
+            10000000000,
+            100000000000,
+            1000000000000,
+            10000000000000,
+            100000000000000,
+            1000000000000000,
+        })[i],
 
-pub fn convertFast(comptime T: type, n: Number) ?T {
+        u128 => ([35]u128{
+            1,
+            10,
+            100,
+            1000,
+            10000,
+            100000,
+            1000000,
+            10000000,
+            100000000,
+            1000000000,
+            10000000000,
+            100000000000,
+            1000000000000,
+            10000000000000,
+            100000000000000,
+            1000000000000000,
+            10000000000000000,
+            100000000000000000,
+            1000000000000000000,
+            10000000000000000000,
+            100000000000000000000,
+            1000000000000000000000,
+            10000000000000000000000,
+            100000000000000000000000,
+            1000000000000000000000000,
+            10000000000000000000000000,
+            100000000000000000000000000,
+            1000000000000000000000000000,
+            10000000000000000000000000000,
+            100000000000000000000000000000,
+            1000000000000000000000000000000,
+            10000000000000000000000000000000,
+            100000000000000000000000000000000,
+            1000000000000000000000000000000000,
+            10000000000000000000000000000000000,
+        })[i],
+
+        else => unreachable,
+    };
+}
+
+pub fn convertFast(comptime T: type, n: Number(T)) ?T {
+    const MT = common.mantissaType(T);
+
     if (!isFastPath(T, n)) {
         return null;
     }
@@ -87,7 +145,7 @@ pub fn convertFast(comptime T: type, n: Number) ?T {
     } else {
         // disguised fast path
         const shift = n.exponent - info.max_exponent_fast_path;
-        const mantissa = math.mul(u64, n.mantissa, int_pow10[@intCast(usize, shift)]) catch return null;
+        const mantissa = math.mul(MT, n.mantissa, fastIntPow10(MT, @intCast(usize, shift))) catch return null;
         if (mantissa > info.max_mantissa_fast_path) {
             return null;
         }

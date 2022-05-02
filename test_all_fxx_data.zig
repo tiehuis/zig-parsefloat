@@ -5,7 +5,7 @@ const parseFloat = @import("parse_float.zig").parseFloat;
 const check_f16 = true;
 const check_f32 = true;
 const check_f64 = true;
-const check_f128 = false;
+const check_f128 = true;
 
 // f16 f32 f64 string_repr
 const TestCase = struct {

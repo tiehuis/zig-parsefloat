@@ -25,7 +25,7 @@ fn parse8Digits(v_: u64) u64 {
 }
 
 /// Parse digits until a non-digit character is found.
-fn tryParseDigits(stream: *FloatStream, x: *u64, comptime base: u8) void {
+fn tryParseDigits(comptime T: type, stream: *FloatStream, x: *T, comptime base: u8) void {
     // Try to parse 8 digits at a time, using an optimized algorithm.
     // This only supports decimal digits.
     if (base == 10) {
@@ -46,16 +46,16 @@ fn tryParseDigits(stream: *FloatStream, x: *u64, comptime base: u8) void {
     }
 }
 
-fn min_n_digit_int(digit_count: usize) u64 {
-    var n: u64 = 1;
+fn min_n_digit_int(comptime T: type, digit_count: usize) T {
+    var n: T = 1;
     var i: usize = 1;
     while (i < digit_count) : (i += 1) n *= 10;
     return n;
 }
 
 /// Parse up to N digits
-fn tryParseNDigits(stream: *FloatStream, x: *u64, comptime base: u8, comptime n: usize) void {
-    while (x.* < min_n_digit_int(n)) {
+fn tryParseNDigits(comptime T: type, stream: *FloatStream, x: *T, comptime base: u8, comptime n: usize) void {
+    while (x.* < min_n_digit_int(T, n)) {
         if (stream.scanDigit(base)) |digit| {
             x.* *%= base;
             x.* +%= digit;
@@ -99,10 +99,12 @@ const ParseInfo = struct {
     exp_char_lower: u8,
 };
 
-fn parsePartialNumberBase(stream: *FloatStream, negative: bool, n: *usize, comptime info: ParseInfo) ?Number {
+fn parsePartialNumberBase(comptime T: type, stream: *FloatStream, negative: bool, n: *usize, comptime info: ParseInfo) ?Number(T) {
+    const MT = common.mantissaType(T);
+
     // parse initial digits before dot
-    var mantissa: u64 = 0;
-    tryParseDigits(stream, &mantissa, info.base);
+    var mantissa: MT = 0;
+    tryParseDigits(MT, stream, &mantissa, info.base);
     var int_end = stream.offsetTrue();
     var n_digits = @intCast(isize, stream.offsetTrue());
 
@@ -111,7 +113,7 @@ fn parsePartialNumberBase(stream: *FloatStream, negative: bool, n: *usize, compt
     if (stream.firstIs('.')) {
         stream.advance(1);
         const marker = stream.offsetTrue();
-        tryParseDigits(stream, &mantissa, info.base);
+        tryParseDigits(MT, stream, &mantissa, info.base);
         const n_after_dot = stream.offsetTrue() - marker;
         exponent = -@intCast(i64, n_after_dot);
         n_digits += @intCast(isize, n_after_dot);
@@ -143,7 +145,7 @@ fn parsePartialNumberBase(stream: *FloatStream, negative: bool, n: *usize, compt
 
     // common case with not many digits
     if (n_digits <= info.max_mantissa_digits) {
-        return Number{
+        return Number(T){
             .exponent = exponent,
             .mantissa = mantissa,
             .negative = negative,
@@ -170,10 +172,10 @@ fn parsePartialNumberBase(stream: *FloatStream, negative: bool, n: *usize, compt
         many_digits = true;
         mantissa = 0;
         stream.reset();
-        tryParseNDigits(stream, &mantissa, info.base, info.max_mantissa_digits);
+        tryParseNDigits(MT, stream, &mantissa, info.base, info.max_mantissa_digits);
 
         exponent = blk: {
-            if (mantissa >= min_n_digit_int(info.max_mantissa_digits)) {
+            if (mantissa >= min_n_digit_int(MT, info.max_mantissa_digits)) {
                 // big int
                 break :blk @intCast(i64, int_end) - @intCast(i64, stream.offsetTrue());
             } else {
@@ -185,7 +187,7 @@ fn parsePartialNumberBase(stream: *FloatStream, negative: bool, n: *usize, compt
                 // point, and at least 1 fractional digit.
                 stream.advance(1);
                 var marker = stream.offsetTrue();
-                tryParseNDigits(stream, &mantissa, info.base, info.max_mantissa_digits);
+                tryParseNDigits(MT, stream, &mantissa, info.base, info.max_mantissa_digits);
                 break :blk @intCast(i64, marker) - @intCast(i64, stream.offsetTrue());
             }
         };
@@ -193,7 +195,7 @@ fn parsePartialNumberBase(stream: *FloatStream, negative: bool, n: *usize, compt
         exponent += exp_number;
     }
 
-    return Number{
+    return Number(T){
         .exponent = exponent,
         .mantissa = mantissa,
         .negative = negative,
@@ -206,29 +208,30 @@ fn parsePartialNumberBase(stream: *FloatStream, negative: bool, n: *usize, compt
 ///
 /// This creates a representation of the float as the
 /// significant digits and the decimal exponent.
-fn parsePartialNumber(s: []const u8, negative: bool, n: *usize) ?Number {
+fn parsePartialNumber(comptime T: type, s: []const u8, negative: bool, n: *usize) ?Number(T) {
     std.debug.assert(s.len != 0);
     var stream = FloatStream.init(s);
+    const MT = common.mantissaType(T);
 
     if (stream.hasLen(2) and stream.atUnchecked(0) == '0' and std.ascii.toLower(stream.atUnchecked(1)) == 'x') {
         stream.advance(2);
-        return parsePartialNumberBase(&stream, negative, n, .{
+        return parsePartialNumberBase(T, &stream, negative, n, .{
             .base = 16,
-            .max_mantissa_digits = 16,
+            .max_mantissa_digits = if (MT == u64) 16 else 32,
             .exp_char_lower = 'p',
         });
     } else {
-        return parsePartialNumberBase(&stream, negative, n, .{
+        return parsePartialNumberBase(T, &stream, negative, n, .{
             .base = 10,
-            .max_mantissa_digits = 19,
+            .max_mantissa_digits = if (MT == u64) 19 else 38,
             .exp_char_lower = 'e',
         });
     }
 }
 
-pub fn parseNumber(s: []const u8, negative: bool) ?Number {
+pub fn parseNumber(comptime T: type, s: []const u8, negative: bool) ?Number(T) {
     var consumed: usize = 0;
-    if (parsePartialNumber(s, negative, &consumed)) |number| {
+    if (parsePartialNumber(T, s, negative, &consumed)) |number| {
         // must consume entire float (no trailing data)
         if (s.len == consumed) {
             return number;
