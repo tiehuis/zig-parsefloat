@@ -31,6 +31,8 @@ pub fn BiasedFp(comptime T: type) type {
         }
 
         pub fn toFloat(self: Self, comptime FloatT: type, negative: bool) FloatT {
+            // TODO: f80 with explicit bit
+
             var word = self.f;
             word |= @intCast(MantissaT, self.e) << std.math.floatMantissaBits(FloatT);
             var f = floatFromUnsigned(FloatT, MantissaT, word);
@@ -85,7 +87,7 @@ pub fn isDigit(c: u8, comptime base: u8) bool {
 pub fn mantissaType(comptime T: type) type {
     return switch (T) {
         f16, f32, f64 => u64,
-        f128 => u128,
+        f80, f128 => u128,
         else => unreachable,
     };
 }

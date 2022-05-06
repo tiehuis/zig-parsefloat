@@ -80,6 +80,7 @@ pub fn convertHex(comptime T: type, n_: Number(T)) T {
         return math.inf(T);
     }
 
+    // TODO: f80
     var bits = n.mantissa & ((1 << mantissa_bits) - 1);
     bits |= @intCast(MantissaT, (n.exponent - exp_bias) & ((1 << exp_bits) - 1)) << mantissa_bits;
     if (n.negative) {

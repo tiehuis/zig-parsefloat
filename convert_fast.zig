@@ -29,6 +29,11 @@ fn isFastPath(comptime T: type, n: Number(T)) bool {
 //
 // Must have max_disguised_fast_path - max_exponent_fast_path entries. (82 - 48 = 34 for f128)
 fn fastPow10(comptime T: type, i: usize) T {
+    // TODO: Reduce table size here by looking up exponent value and creating
+    // the float directly via a shift.
+    //
+    // Instead of a table lookup it becomes a math operation.
+
     return switch (T) {
         f16 => ([8]f16{
             1e0, 1e1, 1e2, 1e3, 1e4, 0, 0, 0,
@@ -44,6 +49,13 @@ fn fastPow10(comptime T: type, i: usize) T {
             1e8,  1e9,  1e10, 1e11, 1e12, 1e13, 1e14, 1e15,
             1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22, 0,
             0,    0,    0,    0,    0,    0,    0,    0,
+        })[i & 31],
+
+        f80 => ([32]f80{
+            1e0,  1e1,  1e2,  1e3,  1e4,  1e5,  1e6,  1e7,
+            1e8,  1e9,  1e10, 1e11, 1e12, 1e13, 1e14, 1e15,
+            1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22, 1e23,
+            1e24, 1e25, 1e26, 1e27, 0,    0,    0,    0,
         })[i & 31],
 
         f128 => ([64]f128{
